@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import TicketDrawer from './TicketDrawer';
-import { 
-  Filter, Search, RefreshCw, AlertCircle, Clock, 
-  CheckCircle2, AlertTriangle, ShieldAlert, ArrowUpRight 
-} from 'lucide-react';
+import { Filter, Search, RefreshCw, AlertCircle, Clock, CheckCircle, ShieldAlert, ArrowUpRight } from 'lucide-react';
 
 export default function OfficerDashboard() {
   const [complaints, setComplaints] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [selectedDept, setSelectedDept] = useState('');
-  const [slaFilter, setSlaFilter] = useState('ALL'); // ALL, RED, AMBER, GREEN, RESOLVED
+  const [slaFilter, setSlaFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [activeTicket, setActiveTicket] = useState(null);
@@ -38,7 +35,6 @@ export default function OfficerDashboard() {
     fetchComplaints();
   }, [selectedDept, searchQuery]);
 
-  // Filter by SLA status client-side
   const filteredComplaints = complaints.filter((c) => {
     if (slaFilter === 'ALL') return true;
     if (slaFilter === 'RED') return c.sla_status === 'RED' || c.status === 'ESCALATED';
@@ -48,7 +44,6 @@ export default function OfficerDashboard() {
     return true;
   });
 
-  // Risk count metrics
   const redCount = complaints.filter((c) => c.sla_status === 'RED' || c.status === 'ESCALATED').length;
   const amberCount = complaints.filter((c) => c.sla_status === 'AMBER').length;
   const greenCount = complaints.filter((c) => c.sla_status === 'GREEN').length;
@@ -61,69 +56,65 @@ export default function OfficerDashboard() {
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      {/* Page Header */}
+      <div className="page-header">
         <div>
-          <h2>Officer Operations Queue</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Triaged citizen complaints sorted by SLA urgency. Review queue risk, transition states, and record official resolutions.
+          <h1 className="page-title">Officer Operations & SLA Triage Queue</h1>
+          <p className="page-subtitle">
+            Departmental grievance triage sorted by statutory deadline urgency. Review workload, execute transitions, and record formal redressals.
           </p>
         </div>
 
-        <button className="btn btn-secondary btn-sm" onClick={fetchComplaints} disabled={isLoading}>
-          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
-          Refresh Queue
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={fetchComplaints}
+          disabled={isLoading}
+        >
+          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+          Refresh Registry
         </button>
       </div>
 
-      {/* SLA Triage Pills */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
-        <button
-          className={`btn ${slaFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-          onClick={() => setSlaFilter('ALL')}
-        >
-          All Grievances ({complaints.length})
-        </button>
-        <button
-          className={`btn ${slaFilter === 'RED' ? 'btn-danger' : 'btn-secondary'} btn-sm`}
-          onClick={() => setSlaFilter('RED')}
-          style={{ borderColor: redCount > 0 ? '#EF4444' : undefined }}
-        >
-          🔴 Breached / Escalated ({redCount})
-        </button>
-        <button
-          className={`btn ${slaFilter === 'AMBER' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-          onClick={() => setSlaFilter('AMBER')}
-          style={{ background: slaFilter === 'AMBER' ? '#D97706' : undefined, borderColor: amberCount > 0 ? '#F59E0B' : undefined }}
-        >
-          🟡 At Risk &gt;75% ({amberCount})
-        </button>
-        <button
-          className={`btn ${slaFilter === 'GREEN' ? 'btn-success' : 'btn-secondary'} btn-sm`}
-          onClick={() => setSlaFilter('GREEN')}
-        >
-          🟢 On Schedule ({greenCount})
-        </button>
-        <button
-          className={`btn ${slaFilter === 'RESOLVED' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-          onClick={() => setSlaFilter('RESOLVED')}
-        >
-          ✓ Resolved ({resolvedCount})
-        </button>
+      {/* KPI Triage Statistics */}
+      <div className="grid-4" style={{ marginBottom: '24px' }}>
+        <div className="kpi-card">
+          <div className="kpi-label">Active Queue Caseload</div>
+          <div className="kpi-value">{complaints.length - resolvedCount}</div>
+          <div className="kpi-footnote">Total assigned across departments</div>
+        </div>
+
+        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-red-text)' }}>
+          <div className="kpi-label" style={{ color: 'var(--status-red-text)' }}>Breached / Escalated</div>
+          <div className="kpi-value" style={{ color: 'var(--status-red-text)' }}>{redCount}</div>
+          <div className="kpi-footnote">Requires urgent supervisory intervention</div>
+        </div>
+
+        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-amber-text)' }}>
+          <div className="kpi-label" style={{ color: 'var(--status-amber-text)' }}>At Risk (&gt;75% SLA)</div>
+          <div className="kpi-value" style={{ color: 'var(--status-amber-text)' }}>{amberCount}</div>
+          <div className="kpi-footnote">Turnaround approaching breach threshold</div>
+        </div>
+
+        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-green-text)' }}>
+          <div className="kpi-label" style={{ color: 'var(--status-green-text)' }}>Compliant Disposals</div>
+          <div className="kpi-value" style={{ color: 'var(--status-green-text)' }}>{resolvedCount}</div>
+          <div className="kpi-footnote">Resolved within statutory deadlines</div>
+        </div>
       </div>
 
-      {/* Filter Toolbar */}
+      {/* Filter and Search Bar */}
       <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
         <div className="grid-2">
-          {/* Department Dropdown */}
+          {/* Department Select */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Filter size={16} color="var(--text-muted)" />
+            <Filter size={15} color="var(--text-muted)" />
             <select
-              className="select-field"
+              className="form-select"
               value={selectedDept}
               onChange={(e) => setSelectedDept(e.target.value)}
             >
-              <option value="">All Civic Departments</option>
+              <option value="">All Departmental Jurisdictions</option>
               {departments.map((d) => (
                 <option key={d.id} value={d.id}>
                   {d.name} ({d.code})
@@ -134,37 +125,79 @@ export default function OfficerDashboard() {
 
           {/* Search Input */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Search size={16} color="var(--text-muted)" />
+            <Search size={15} color="var(--text-muted)" />
             <input
               type="text"
-              className="input-field"
-              placeholder="Search tracking ID, citizen, or keywords..."
+              className="form-input"
+              placeholder="Filter by tracking number, complainant, or keyword..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
+
+        {/* Segmented Triage Filter Buttons */}
+        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+          <button
+            type="button"
+            className={`btn ${slaFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            onClick={() => setSlaFilter('ALL')}
+          >
+            All Tickets ({complaints.length})
+          </button>
+          <button
+            type="button"
+            className={`btn ${slaFilter === 'RED' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            style={{ backgroundColor: slaFilter === 'RED' ? 'var(--status-red-text)' : undefined, color: slaFilter !== 'RED' && redCount > 0 ? 'var(--status-red-text)' : undefined }}
+            onClick={() => setSlaFilter('RED')}
+          >
+            Breached / Escalated ({redCount})
+          </button>
+          <button
+            type="button"
+            className={`btn ${slaFilter === 'AMBER' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            style={{ backgroundColor: slaFilter === 'AMBER' ? 'var(--status-amber-text)' : undefined, color: slaFilter !== 'AMBER' && amberCount > 0 ? 'var(--status-amber-text)' : undefined }}
+            onClick={() => setSlaFilter('AMBER')}
+          >
+            At Risk ({amberCount})
+          </button>
+          <button
+            type="button"
+            className={`btn ${slaFilter === 'GREEN' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            style={{ backgroundColor: slaFilter === 'GREEN' ? 'var(--status-green-text)' : undefined }}
+            onClick={() => setSlaFilter('GREEN')}
+          >
+            On Schedule ({greenCount})
+          </button>
+          <button
+            type="button"
+            className={`btn ${slaFilter === 'RESOLVED' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
+            onClick={() => setSlaFilter('RESOLVED')}
+          >
+            Resolved ({resolvedCount})
+          </button>
+        </div>
       </div>
 
-      {/* Complaints Table */}
+      {/* Data Table */}
       <div className="table-container">
         <table className="data-table">
           <thead>
             <tr>
               <th>Tracking ID</th>
-              <th>Citizen / Grievance</th>
+              <th>Complainant & Subject</th>
               <th>Department / Category</th>
               <th>Priority</th>
               <th>Status</th>
-              <th>SLA Remaining</th>
-              <th>Action</th>
+              <th>SLA Balance</th>
+              <th>Operation</th>
             </tr>
           </thead>
           <tbody>
             {filteredComplaints.length === 0 ? (
               <tr>
                 <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  No grievances found matching the current filter.
+                  No grievances found matching the specified parameters.
                 </td>
               </tr>
             ) : (
@@ -174,63 +207,59 @@ export default function OfficerDashboard() {
                   style={{ cursor: 'pointer' }}
                   onClick={() => setActiveTicket(c)}
                 >
-                  {/* Tracking Code */}
                   <td>
-                    <strong style={{ color: '#60A5FA', fontSize: '0.85rem' }}>{c.tracking_id}</strong>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-700)', fontSize: '0.85rem' }}>
+                      {c.tracking_id}
+                    </span>
+                    <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                       {new Date(c.created_at).toLocaleDateString()}
                     </div>
                   </td>
 
-                  {/* Title & Citizen */}
-                  <td style={{ maxWidth: '300px' }}>
+                  <td style={{ maxWidth: '320px' }}>
                     <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
                       {c.title}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                       {c.citizen_name} • {c.citizen_contact}
                     </div>
                   </td>
 
-                  {/* Department & Category */}
                   <td>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#93C5FD' }}>
+                    <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {c.department?.name || 'Unassigned'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {c.category?.name || 'General'}
                     </div>
                   </td>
 
-                  {/* Priority */}
                   <td>
-                    <span className={`badge badge-${c.priority === 'CRITICAL' ? 'red' : c.priority === 'HIGH' ? 'amber' : 'blue'}`}>
+                    <span className={`badge badge-${c.priority === 'CRITICAL' ? 'red' : c.priority === 'HIGH' ? 'amber' : 'gray'}`}>
                       {c.priority}
                     </span>
                   </td>
 
-                  {/* Status */}
                   <td>
                     <span className={`badge badge-${c.status === 'ESCALATED' ? 'red' : c.status === 'RESOLVED' ? 'green' : c.status === 'IN_PROGRESS' ? 'amber' : 'blue'}`}>
                       {c.status}
                     </span>
                   </td>
 
-                  {/* SLA Countdown */}
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span className={`badge badge-${c.sla_status === 'GREEN' ? 'green' : c.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
                         {c.sla_status}
                       </span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: c.sla_hours_remaining < 0 ? '#F87171' : 'var(--text-primary)' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: c.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--text-primary)' }}>
                         {c.sla_hours_remaining !== null ? `${c.sla_hours_remaining}h` : '—'}
                       </span>
                     </div>
                   </td>
 
-                  {/* Action Link */}
                   <td>
                     <button
+                      type="button"
                       className="btn btn-secondary btn-sm"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -238,7 +267,7 @@ export default function OfficerDashboard() {
                       }}
                     >
                       Inspect
-                      <ArrowUpRight size={14} />
+                      <ArrowUpRight size={13} />
                     </button>
                   </td>
                 </tr>
@@ -248,7 +277,7 @@ export default function OfficerDashboard() {
         </table>
       </div>
 
-      {/* Ticket Action Drawer */}
+      {/* Ticket Drawer */}
       {activeTicket && (
         <TicketDrawer
           ticket={activeTicket}

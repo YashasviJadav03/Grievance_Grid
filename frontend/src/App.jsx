@@ -15,9 +15,9 @@ export default function App() {
     setIsScanning(true);
     try {
       const res = await api.triggerSLAScan();
-      alert(`SLA Sweep complete! Scanned: ${res.result.scanned_count}, Escalated: ${res.result.escalated_count}`);
+      alert(`SLA Sweep completed. Scanned: ${res.result.scanned_count}, Escalated: ${res.result.escalated_count}`);
     } catch (err) {
-      alert(`SLA Sweep error: ${err.message}`);
+      alert(`SLA Sweep failed: ${err.message}`);
     } finally {
       setIsScanning(false);
     }
@@ -54,9 +54,8 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--border-subtle)', padding: '20px 24px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        Grievance Grid — Automated Public Grievance Routing & SLA Accountability Engine. Built with FastAPI, PostgreSQL/SQLite, Scikit-learn & React.
+      <footer style={{ borderTop: '1px solid var(--border-light)', backgroundColor: '#FFFFFF', padding: '20px 24px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+        Grievance Grid — Autonomous Public Grievance Routing & SLA Accountability Platform. Enterprise GovTech Architecture.
       </footer>
     </div>
   );

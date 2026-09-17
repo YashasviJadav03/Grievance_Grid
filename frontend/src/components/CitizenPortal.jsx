@@ -1,13 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import confetti from 'canvas-confetti';
 import { 
-  Send, Search, CheckCircle2, Clock, AlertTriangle, 
-  Sparkles, ShieldAlert, ArrowRight, RefreshCw, FileText, CheckCircle
+  FilePlus, Search, CheckCircle, Clock, AlertCircle, 
+  ArrowRight, Shield, Building2, User, Phone, Mail, 
+  FileCheck, ExternalLink, Printer
 } from 'lucide-react';
 
-export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
-  const [subTab, setSubTab] = useState(initialTrackingId ? 'track' : 'file');
+const DEMO_PRESETS = [
+  {
+    label: "Water Supply Disruption",
+    title: "Potable water supply interrupted for past 72 hours",
+    description: "Municipal piped water supply has completely ceased in Sector 4 Block B since Tuesday morning. Multiple households affected.",
+  },
+  {
+    label: "Hazardous Road Crater",
+    title: "Deep roadway pothole at arterial intersection",
+    description: "Substantial asphalt subsidence near the central junction causing severe vehicular deceleration and accident risks for two-wheelers.",
+  },
+  {
+    label: "Electrical Cable Hazard",
+    title: "Live conductor detached from distribution pole",
+    description: "High-tension power line has snapped and is suspended dangerously close to the pedestrian walkway near the public school perimeter.",
+  },
+  {
+    label: "Solid Waste Overflow",
+    title: "Uncollected municipal waste container overflowing",
+    description: "Primary colony waste disposal bin has exceeded storage capacity for 5 consecutive days without clearance by sanitation vehicles.",
+  },
+];
+
+export default function CitizenPortal({ initialTrackingId }) {
+  const [activeView, setActiveView] = useState(initialTrackingId ? 'track' : 'lodge');
 
   // Intake Form State
   const [formData, setFormData] = useState({
@@ -18,7 +41,7 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
     description: '',
   });
 
-  // Classifier live prediction
+  // Classifier state
   const [prediction, setPrediction] = useState(null);
   const [isClassifying, setIsClassifying] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,22 +52,21 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
   const [trackedTicket, setTrackedTicket] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
   const [trackError, setTrackError] = useState('');
-  const [sampleTickets, setSampleTickets] = useState([]);
+  const [recentTickets, setRecentTickets] = useState([]);
 
-  // Fetch some sample active tickets for 1-click tracking demonstration
+  // Fetch recent tickets for lookup reference
   useEffect(() => {
-    api.getComplaints({ limit: 5 }).then((data) => {
-      setSampleTickets(data);
+    api.getComplaints({ limit: 6 }).then((data) => {
+      setRecentTickets(data);
       if (initialTrackingId) {
         handleTrack(initialTrackingId);
       } else if (data.length > 0 && !trackedTicket) {
-        // Preload first ticket for instant demo
         handleTrack(data[0].tracking_id);
       }
     }).catch(console.error);
   }, [initialTrackingId]);
 
-  // Debounced auto-classification
+  // Debounced real-time classification preview
   useEffect(() => {
     if (!formData.title.trim() && !formData.description.trim()) {
       setPrediction(null);
@@ -61,7 +83,7 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
       } finally {
         setIsClassifying(false);
       }
-    }, 400);
+    }, 350);
 
     return () => clearTimeout(timer);
   }, [formData.title, formData.description]);
@@ -74,8 +96,6 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
     try {
       const ticket = await api.submitComplaint(formData);
       setSubmittedTicket(ticket);
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-      // Reset form
       setFormData({
         citizen_name: '',
         citizen_contact: '',
@@ -85,7 +105,7 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
       });
       setPrediction(null);
     } catch (err) {
-      alert(`Submission failed: ${err.message}`);
+      alert(`Submission Error: ${err.message}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -101,254 +121,266 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
       setTrackedTicket(ticket);
       setTrackingInput(ticket.tracking_id);
     } catch (err) {
-      setTrackError(err.message || 'Ticket not found');
+      setTrackError(err.message || 'Reference record could not be found.');
       setTrackedTicket(null);
     } finally {
       setIsTracking(false);
     }
   };
 
-  const applyPreset = (title, desc) => {
+  const handleApplyPreset = (preset) => {
     setFormData({
-      citizen_name: 'Rahul Sharma',
-      citizen_contact: '+91-9876543210',
-      citizen_email: 'rahul.sharma@example.com',
-      title,
-      description: desc,
+      citizen_name: 'Ananya Deshmukh',
+      citizen_contact: '+91-9820123456',
+      citizen_email: 'ananya.deshmukh@example.org',
+      title: preset.title,
+      description: preset.description,
     });
   };
 
   return (
     <div>
-      {/* Sub-Header Tabs */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+      {/* Sub-Navigation Header */}
+      <div className="page-header">
         <div>
-          <h2>Citizen Grievance Portal</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Submit civic complaints with automated AI routing, guaranteed SLA deadlines, and live public tracking.
+          <h1 className="page-title">Citizen Redressal Portal</h1>
+          <p className="page-subtitle">
+            Lodge public grievances with deterministic department routing, statutory SLA turnaround, and end-to-end verification.
           </p>
         </div>
 
-        <div className="nav-tabs">
+        <div className="nav-menu">
           <button
-            className={`nav-tab-btn ${subTab === 'file' ? 'active' : ''}`}
-            onClick={() => setSubTab('file')}
+            className={`nav-link ${activeView === 'lodge' ? 'active' : ''}`}
+            onClick={() => setActiveView('lodge')}
           >
-            <Send size={15} />
-            File Grievance
+            <FilePlus size={15} />
+            Lodge Grievance
           </button>
           <button
-            className={`nav-tab-btn ${subTab === 'track' ? 'active' : ''}`}
-            onClick={() => setSubTab('track')}
+            className={`nav-link ${activeView === 'track' ? 'active' : ''}`}
+            onClick={() => setActiveView('track')}
           >
             <Search size={15} />
-            Track Grievance
+            Track Status
           </button>
         </div>
       </div>
 
-      {/* TAB 1: FILE GRIEVANCE */}
-      {subTab === 'file' && (
+      {/* VIEW 1: LODGE GRIEVANCE */}
+      {activeView === 'lodge' && (
         <div className="grid-2">
-          {/* Left Column: Form */}
+          {/* Main Submission Form */}
           <div className="card">
-            <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <FileText size={18} color="var(--primary)" />
-              Lodge Public Grievance
-            </h3>
-
-            {/* Quick Demo Presets */}
-            <div style={{ marginBottom: '18px', padding: '12px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                ⚡ Quick Autofill Test Cases:
+            <div className="card-header">
+              <span className="card-title">
+                <FilePlus size={16} color="var(--primary-600)" />
+                Public Grievance Intake Form
               </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => applyPreset('No water supply in my area for 3 days', 'Water supply has completely ceased in Sector 4 Block B. Tap water is totally dry.')}
+
+              {/* Unobtrusive Test Preset Selector */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Template:</span>
+                <select
+                  className="form-select"
+                  style={{ width: 'auto', padding: '4px 8px', fontSize: '0.75rem' }}
+                  onChange={(e) => {
+                    const found = DEMO_PRESETS.find((p) => p.label === e.target.value);
+                    if (found) handleApplyPreset(found);
+                  }}
+                  defaultValue=""
                 >
-                  💧 Water Issue
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => applyPreset('Huge pothole near flyover exit', 'Deep dangerous asphalt crater causing two-wheelers to slip during evening rush.')}
-                >
-                  🛣️ Road Pothole
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => applyPreset('Fallen power line sparking on road', 'Live high-tension electric cable snapped and hanging near the school entrance.')}
-                >
-                  ⚡ Electric Hazard
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => applyPreset('Rotting garbage dump overflowing', 'Municipal dumpster overflowing with waste onto the sidewalk for over 5 days.')}
-                >
-                  🧹 Sanitation
-                </button>
+                  <option value="" disabled>Load Case Example...</option>
+                  {DEMO_PRESETS.map((p) => (
+                    <option key={p.label} value={p.label}>{p.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
             <form onSubmit={handleSubmit}>
               <div className="grid-2">
-                <div className="input-group">
-                  <label className="input-label">Citizen Name *</label>
+                <div className="form-group">
+                  <label className="form-label">
+                    Full Name <span className="required">*</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    className="input-field"
-                    placeholder="e.g. Ramesh Verma"
+                    className="form-input"
+                    placeholder="Enter complainant name"
                     value={formData.citizen_name}
                     onChange={(e) => setFormData({ ...formData, citizen_name: e.target.value })}
                   />
                 </div>
-                <div className="input-group">
-                  <label className="input-label">Mobile Number *</label>
+
+                <div className="form-group">
+                  <label className="form-label">
+                    Contact Number <span className="required">*</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    className="input-field"
-                    placeholder="+91-9876543210"
+                    className="form-input"
+                    placeholder="+91-XXXXXXXXXX"
                     value={formData.citizen_contact}
                     onChange={(e) => setFormData({ ...formData, citizen_contact: e.target.value })}
                   />
+                  <span className="form-hint">Used for dispatch confirmation & SLA milestone alerts.</span>
                 </div>
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Email Address (Optional for notifications)</label>
+              <div className="form-group">
+                <label className="form-label">Email Address (Optional)</label>
                 <input
                   type="email"
-                  className="input-field"
-                  placeholder="ramesh.verma@example.com"
+                  className="form-input"
+                  placeholder="complainant@domain.com"
                   value={formData.citizen_email}
                   onChange={(e) => setFormData({ ...formData, citizen_email: e.target.value })}
                 />
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Grievance Title *</label>
+              <div className="form-group">
+                <label className="form-label">
+                  Grievance Subject <span className="required">*</span>
+                </label>
                 <input
                   type="text"
                   required
-                  className="input-field"
-                  placeholder="e.g. No water supply in my area for 3 days"
+                  className="form-input"
+                  placeholder="Concise summary of the civic grievance"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
 
-              <div className="input-group">
-                <label className="input-label">Detailed Description *</label>
+              <div className="form-group">
+                <label className="form-label">
+                  Detailed Narrative & Specific Location <span className="required">*</span>
+                </label>
                 <textarea
                   required
                   rows={4}
-                  className="textarea-field"
-                  placeholder="Describe location, duration, and urgency of the issue..."
+                  className="form-textarea"
+                  placeholder="State the exact geographical location, duration, and nature of the issue..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
+                <span className="form-hint">
+                  The automated classifier utilizes keyword context to route directly to the designated department.
+                </span>
               </div>
 
-              <button
-                type="submit"
-                className="btn btn-primary"
-                style={{ width: '100%' }}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Routing Grievance...' : 'Submit Grievance into Grid'}
-                <ArrowRight size={16} />
-              </button>
+              <div style={{ marginTop: '24px' }}>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  style={{ width: '100%' }}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Registering Grievance...' : 'Submit Grievance to Official Registry'}
+                  <ArrowRight size={15} />
+                </button>
+              </div>
             </form>
           </div>
 
-          {/* Right Column: Live Classification Preview & Submission Feedback */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* Live AI Router Card */}
-            <div className="card" style={{ border: '1px solid var(--border-bright)', background: 'linear-gradient(145deg, #101626, #141C30)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Sparkles size={18} color="#93C5FD" />
-                  Real-Time Auto-Routing Engine
-                </h3>
-                {isClassifying && <span style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Analyzing...</span>}
+          {/* Right Column: Routing Assessment & Registration Acknowledgement */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Real-time Forecast Panel */}
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">
+                  <Shield size={16} color="var(--primary-600)" />
+                  Automated Routing & SLA Assessment
+                </span>
+                {isClassifying && (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--primary-600)', fontWeight: 600 }}>
+                    Evaluating text...
+                  </span>
+                )}
               </div>
 
               {prediction ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Target Department</span>
-                    <strong style={{ color: '#93C5FD' }}>{prediction.department_name}</strong>
-                  </div>
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)' }}>
-                    <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Auto-Classified Category</span>
-                    <strong>{prediction.category_name}</strong>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ padding: '14px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: '2px' }}>
+                      Designated Redressal Authority
+                    </div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary-700)' }}>
+                      {prediction.department_name}
+                    </div>
                   </div>
 
                   <div className="grid-2">
-                    <div style={{ padding: '10px 14px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Guaranteed SLA</span>
-                      <strong style={{ color: 'var(--sla-green)', fontSize: '1.1rem' }}>
-                        {prediction.default_sla_hours} Hours
-                      </strong>
+                    <div style={{ padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                        Categorization
+                      </div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: 600, marginTop: '2px' }}>
+                        {prediction.category_name}
+                      </div>
                     </div>
-                    <div style={{ padding: '10px 14px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Initial Priority</span>
-                      <span className={`badge badge-${prediction.priority === 'CRITICAL' ? 'red' : prediction.priority === 'HIGH' ? 'amber' : 'blue'}`}>
-                        {prediction.priority}
-                      </span>
+
+                    <div style={{ padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
+                      <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                        Statutory SLA Window
+                      </div>
+                      <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--status-green-text)', marginTop: '2px' }}>
+                        {prediction.default_sla_hours} Hours
+                      </div>
                     </div>
                   </div>
 
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Routing Method: <code>{prediction.method}</code></span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+                    <span>Classification Pipeline: <strong>{prediction.method === 'RULE_BASED' ? 'Deterministic Regex Match' : 'Statistical TF-IDF'}</strong></span>
                     <span>Confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong></span>
                   </div>
                 </div>
               ) : (
-                <div style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '0.875rem' }}>
-                    Start typing your grievance title or description. The automated classifier will instantly evaluate keywords and suggest the exact department and SLA window.
+                <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <Building2 size={28} style={{ margin: '0 auto 10px', opacity: 0.4 }} />
+                  <p>
+                    As you draft your grievance, the routing engine will evaluate terminology to determine the exact department jurisdiction and SLA turnaround target.
                   </p>
                 </div>
               )}
             </div>
 
-            {/* Submission Confirmation Card */}
+            {/* Official Registration Receipt Card */}
             {submittedTicket && (
-              <div className="card" style={{ border: '1px solid var(--sla-green)', background: 'rgba(16, 185, 129, 0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--sla-green)', marginBottom: '12px' }}>
-                  <CheckCircle2 size={24} />
-                  <h3 style={{ fontSize: '1.1rem', color: 'white' }}>Grievance Registered Successfully!</h3>
+              <div className="card" style={{ border: '1px solid var(--status-green-border)', backgroundColor: '#FAFAF9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: 'var(--status-green-text)', marginBottom: '14px' }}>
+                  <FileCheck size={22} />
+                  <div>
+                    <h3 style={{ fontSize: '1rem', color: 'var(--text-primary)' }}>Registration Acknowledged</h3>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Statutory Reference Generated</span>
+                  </div>
                 </div>
 
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '16px' }}>
-                  Your grievance has been auto-classified and stamped with a strict SLA deadline in the department queue.
-                </p>
-
-                <div style={{ padding: '12px', background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)', marginBottom: '16px' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>Your Official Tracking ID</span>
-                  <strong style={{ fontSize: '1.3rem', letterSpacing: '0.05em', color: '#60A5FA' }}>
+                <div style={{ padding: '16px', background: '#FFFFFF', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>
+                    Official Tracking Number
+                  </div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, fontFamily: 'monospace', color: 'var(--primary-700)', letterSpacing: '0.04em', marginTop: '2px' }}>
                     {submittedTicket.tracking_id}
-                  </strong>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                    Assigned to: <strong>{submittedTicket.department?.name}</strong>
+                  </div>
                 </div>
 
                 <button
                   className="btn btn-primary"
                   style={{ width: '100%' }}
                   onClick={() => {
-                    setSubTab('track');
+                    setActiveView('track');
                     handleTrack(submittedTicket.tracking_id);
                   }}
                 >
-                  Track Status in Real-Time
-                  <ArrowRight size={16} />
+                  Inspect Redressal Status & SLA Countdown
+                  <ArrowRight size={15} />
                 </button>
               </div>
             )}
@@ -356,22 +388,22 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
         </div>
       )}
 
-      {/* TAB 2: TRACK GRIEVANCE */}
-      {subTab === 'track' && (
+      {/* VIEW 2: TRACK STATUS */}
+      {activeView === 'track' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          {/* Search Header */}
+          {/* Reference Lookup Panel */}
           <div className="card">
             <div style={{ maxWidth: '640px', margin: '0 auto', textAlign: 'center' }}>
-              <h3 style={{ marginBottom: '8px' }}>Track Citizen Grievance Status</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginBottom: '20px' }}>
-                Enter your unique Tracking ID to inspect real-time department queue position, SLA countdown, and resolution audit trail.
+              <h2 style={{ fontSize: '1.2rem', marginBottom: '6px' }}>Public Grievance Status Verification</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '18px' }}>
+                Enter your official tracking reference number to inspect department queue progression, SLA countdown, and resolution notes.
               </p>
 
               <div style={{ display: 'flex', gap: '10px' }}>
                 <input
                   type="text"
-                  className="input-field"
-                  placeholder="e.g. GG-20260917-7333"
+                  className="form-input"
+                  placeholder="e.g. GG-20260917-7436"
                   value={trackingInput}
                   onChange={(e) => setTrackingInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleTrack()}
@@ -381,108 +413,113 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
                   onClick={() => handleTrack()}
                   disabled={isTracking}
                 >
-                  <Search size={16} />
-                  {isTracking ? 'Searching...' : 'Track'}
+                  <Search size={15} />
+                  {isTracking ? 'Verifying...' : 'Search'}
                 </button>
               </div>
 
-              {/* Sample Ticket Chips */}
-              {sampleTickets.length > 0 && (
+              {recentTickets.length > 0 && (
                 <div style={{ marginTop: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Try sample ticket:</span>
-                  {sampleTickets.slice(0, 4).map((t) => (
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Recent submissions:</span>
+                  {recentTickets.slice(0, 4).map((t) => (
                     <button
                       key={t.id}
+                      type="button"
                       className="btn btn-secondary btn-sm"
-                      style={{ fontSize: '0.75rem', padding: '2px 8px' }}
+                      style={{ padding: '2px 8px', fontSize: '0.75rem' }}
                       onClick={() => handleTrack(t.tracking_id)}
                     >
-                      {t.tracking_id} ({t.department?.code})
+                      {t.tracking_id}
                     </button>
                   ))}
                 </div>
               )}
 
               {trackError && (
-                <div style={{ marginTop: '16px', color: '#F87171', fontSize: '0.85rem' }}>
-                  ⚠️ {trackError}
+                <div style={{ marginTop: '14px', color: 'var(--status-red-text)', fontSize: '0.825rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                  <AlertCircle size={15} />
+                  {trackError}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Ticket Detail & Status View */}
+          {/* Grievance Ledger & Timeline Details */}
           {trackedTicket && (
             <div className="grid-2">
-              {/* Left Column: Core Ticket Details */}
+              {/* Left Column: Official Case Dossier */}
               <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
                   <div>
                     <span className="badge badge-blue" style={{ marginBottom: '6px' }}>
-                      {trackedTicket.department?.name || 'General Department'}
+                      {trackedTicket.department?.name || 'Departmental Registry'}
                     </span>
-                    <h3>{trackedTicket.title}</h3>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      Filed by {trackedTicket.citizen_name} on {new Date(trackedTicket.created_at).toLocaleString()}
-                    </span>
+                    <h3 style={{ fontSize: '1.15rem' }}>{trackedTicket.title}</h3>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                      Tracking ID: <strong style={{ fontFamily: 'monospace' }}>{trackedTicket.tracking_id}</strong>
+                    </div>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <span className={`badge badge-${trackedTicket.sla_status === 'GREEN' ? 'green' : trackedTicket.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
-                      SLA: {trackedTicket.sla_status}
-                    </span>
-                  </div>
+                  <span className={`badge badge-${trackedTicket.sla_status === 'GREEN' ? 'green' : trackedTicket.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
+                    SLA State: {trackedTicket.sla_status}
+                  </span>
                 </div>
 
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '20px', lineHeight: 1.6 }}>
+                <div style={{ padding: '14px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.875rem', lineHeight: 1.6, color: 'var(--text-primary)', marginBottom: '20px' }}>
                   {trackedTicket.description}
-                </p>
+                </div>
 
-                {/* SLA Metric Card */}
-                <div style={{ background: 'var(--bg-surface-elevated)', padding: '16px', borderRadius: 'var(--radius-md)', marginBottom: '20px', border: '1px solid var(--border-subtle)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SLA Target Window</span>
+                {/* Statutory SLA Schedule */}
+                <div style={{ padding: '16px', background: '#FFFFFF', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-light)', marginBottom: '8px', fontSize: '0.825rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Lodged Date & Time</span>
+                    <strong>{new Date(trackedTicket.created_at).toLocaleString()}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-light)', marginBottom: '8px', fontSize: '0.825rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Standard Resolution SLA</span>
                     <strong>{trackedTicket.category?.default_sla_hours || 24} Hours</strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>SLA Deadline</span>
-                    <strong style={{ color: trackedTicket.is_breached ? '#F87171' : '#34D399' }}>
-                      {trackedTicket.sla_deadline ? new Date(trackedTicket.sla_deadline).toLocaleString() : 'N/A'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--border-light)', marginBottom: '8px', fontSize: '0.825rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Statutory Resolution Deadline</span>
+                    <strong style={{ color: trackedTicket.is_breached ? 'var(--status-red-text)' : 'var(--status-green-text)' }}>
+                      {trackedTicket.sla_deadline ? new Date(trackedTicket.sla_deadline).toLocaleString() : 'Not Assigned'}
                     </strong>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Hours Remaining</span>
-                    <strong style={{ fontSize: '1.1rem', color: trackedTicket.sla_hours_remaining < 0 ? '#F87171' : '#60A5FA' }}>
-                      {trackedTicket.sla_hours_remaining !== null ? `${trackedTicket.sla_hours_remaining} hrs` : 'N/A'}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Turnaround Balance</span>
+                    <strong style={{ color: trackedTicket.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--primary-700)' }}>
+                      {trackedTicket.sla_hours_remaining !== null ? `${trackedTicket.sla_hours_remaining} hrs remaining` : 'Resolved'}
                     </strong>
                   </div>
                 </div>
 
-                {/* Assigned Queue & Supervisor Info */}
-                <div style={{ padding: '12px', background: 'var(--bg-main)', borderRadius: 'var(--radius-md)', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
-                  <div>Assigned Queue: <strong>{trackedTicket.assigned_to || 'Department Dispatch'}</strong></div>
-                  <div>Supervisor Escort: <strong>{trackedTicket.department?.supervisor_email || 'supervisor@grievance.gov.in'}</strong></div>
+                {/* Responsible Nodal Point */}
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'var(--bg-card-secondary)', padding: '12px 14px', borderRadius: 'var(--radius-md)' }}>
+                  <div>Operating Queue: <strong>{trackedTicket.assigned_to || 'Department Operational Dispatch'}</strong></div>
+                  <div>Escalation Supervisor: <strong>{trackedTicket.department?.supervisor_email || 'supervisor@grievance.gov.in'}</strong></div>
                 </div>
 
                 {trackedTicket.resolution_notes && (
-                  <div style={{ marginTop: '16px', padding: '14px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.3)', borderRadius: 'var(--radius-md)' }}>
-                    <strong style={{ color: '#34D399', fontSize: '0.85rem', display: 'block', marginBottom: '4px' }}>
-                      Official Resolution Note:
-                    </strong>
-                    <p style={{ fontSize: '0.875rem' }}>{trackedTicket.resolution_notes}</p>
+                  <div style={{ marginTop: '16px', padding: '14px', background: 'var(--status-green-bg)', border: '1px solid var(--status-green-border)', borderRadius: 'var(--radius-md)' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--status-green-text)', textTransform: 'uppercase', marginBottom: '4px' }}>
+                      Official Disposal & Resolution Summary:
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-primary)' }}>{trackedTicket.resolution_notes}</p>
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Interactive State Machine Stepper & Immutable Audit Logs */}
+              {/* Right Column: Formal Lifecycle Stepper & Audit Log */}
               <div className="card">
-                <h3 style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Clock size={18} color="var(--primary)" />
-                  Resolution Lifecycle & Audit Trail
-                </h3>
+                <div className="card-header">
+                  <span className="card-title">
+                    <Clock size={16} color="var(--primary-600)" />
+                    Redressal Progression & Immutable Audit
+                  </span>
+                </div>
 
                 {/* Stepper */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', position: 'relative', marginBottom: '32px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '28px', padding: '0 8px' }}>
                   {['SUBMITTED', 'ROUTED', 'IN_PROGRESS', 'RESOLVED'].map((step, idx) => {
                     const stepOrder = ['SUBMITTED', 'ROUTED', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'];
                     const currentIdx = stepOrder.indexOf(trackedTicket.status);
@@ -491,26 +528,26 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
                     const isEscalated = trackedTicket.status === 'ESCALATED' && step === 'IN_PROGRESS';
 
                     return (
-                      <div key={step} style={{ textAlign: 'center', zIndex: 2, flex: 1 }}>
+                      <div key={step} style={{ textAlign: 'center', flex: 1, position: 'relative' }}>
                         <div
                           style={{
-                            width: '32px',
-                            height: '32px',
+                            width: '30px',
+                            height: '30px',
                             borderRadius: '50%',
-                            background: isEscalated ? '#EF4444' : isPassed ? 'var(--primary)' : 'var(--bg-surface-elevated)',
-                            color: 'white',
+                            backgroundColor: isEscalated ? 'var(--status-red-bg)' : isPassed ? 'var(--primary-600)' : '#FFFFFF',
+                            color: isEscalated ? 'var(--status-red-text)' : isPassed ? '#FFFFFF' : 'var(--text-muted)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            margin: '0 auto 8px',
+                            margin: '0 auto 6px',
+                            fontSize: '0.75rem',
                             fontWeight: 700,
-                            fontSize: '0.8rem',
-                            border: `2px solid ${isPassed ? 'var(--primary)' : 'var(--border-subtle)'}`,
+                            border: `2px solid ${isEscalated ? 'var(--status-red-border)' : isPassed ? 'var(--primary-600)' : 'var(--border-medium)'}`,
                           }}
                         >
-                          {isPassed ? <CheckCircle size={16} /> : idx + 1}
+                          {isPassed ? '✓' : idx + 1}
                         </div>
-                        <span style={{ fontSize: '0.7rem', color: isPassed ? 'var(--text-primary)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
+                        <span style={{ fontSize: '0.675rem', fontWeight: 600, color: isPassed ? 'var(--text-primary)' : 'var(--text-muted)', textTransform: 'uppercase' }}>
                           {isEscalated ? 'ESCALATED' : step.replace('_', ' ')}
                         </span>
                       </div>
@@ -518,29 +555,29 @@ export default function CitizenPortal({ onOpenTracker, initialTrackingId }) {
                   })}
                 </div>
 
-                {/* Audit Logs List */}
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>
-                  Immutable Audit History ({trackedTicket.status_logs?.length || 0} events)
-                </h4>
+                {/* Audit Ledger */}
+                <div style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
+                  Chronological Audit Log ({trackedTicket.status_logs?.length || 0} Recorded Actions)
+                </div>
 
                 <div className="timeline">
                   {trackedTicket.status_logs?.map((log) => (
                     <div key={log.id} className="timeline-item">
-                      <div className={`timeline-dot ${log.to_status === 'ESCALATED' ? 'breached' : log.to_status === 'RESOLVED' ? 'completed' : 'active'}`}>
+                      <div className={`timeline-bullet ${log.to_status === 'ESCALATED' ? 'breached' : log.to_status === 'RESOLVED' ? 'completed' : 'current'}`}>
                         {log.to_status === 'ESCALATED' ? '!' : '✓'}
                       </div>
-                      <div className="timeline-content">
+                      <div className="timeline-box">
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                           <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'blue'}`}>
                             {log.to_status}
                           </span>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                            {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                          <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                            {new Date(log.created_at).toLocaleString()}
                           </span>
                         </div>
                         <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{log.reason}</p>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                          Actor: <strong>{log.changed_by}</strong>
+                          Recorded by: <strong>{log.changed_by}</strong>
                         </span>
                       </div>
                     </div>
