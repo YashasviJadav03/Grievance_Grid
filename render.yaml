@@ -1,0 +1,35 @@
+services:
+  # ----------------------------------------------------
+  # 1. FastAPI Backend (Web Service)
+  # ----------------------------------------------------
+  - type: web
+    name: grievance-grid-backend
+    runtime: python
+    rootDir: backend
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/departments/
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "false"
+
+  # ----------------------------------------------------
+  # 2. React + Vite Frontend (Static Site)
+  # ----------------------------------------------------
+  - type: web
+    name: grievance-grid-frontend
+    runtime: static
+    rootDir: frontend
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE
+        value: https://grievance-grid-backend.onrender.com/api/v1
