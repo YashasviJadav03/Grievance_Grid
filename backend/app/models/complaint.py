@@ -1,13 +1,13 @@
 from sqlalchemy import Column, Integer, String, Text, Boolean, DateTime, ForeignKey, Float
 from sqlalchemy.orm import relationship
 from datetime import datetime
-import random
+import secrets
 from app.db.session import Base
 
 
 def generate_tracking_id() -> str:
     now = datetime.utcnow()
-    rand_suffix = f"{random.randint(1000, 9999)}"
+    rand_suffix = secrets.token_hex(3).upper()
     return f"GG-{now.strftime('%Y%m%d')}-{rand_suffix}"
 
 

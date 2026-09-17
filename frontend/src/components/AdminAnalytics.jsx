@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { BarChart2, Building2, Clock, ShieldAlert, Layers, RefreshCw } from 'lucide-react';
+import { Building2, ShieldAlert, RefreshCw, TrendingUp, CheckCircle, Clock } from 'lucide-react';
 
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
@@ -25,7 +25,7 @@ export default function AdminAnalytics() {
   if (isLoading || !data) {
     return (
       <div className="content-container">
-        <div className="panel" style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+        <div className="panel" style={{ textAlign: 'center', padding: 'var(--space-10)' }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto var(--space-2)' }} />
           <p style={{ color: 'var(--color-gray-500)', fontSize: '13px' }}>
             Aggregating departmental telemetry and SLA compliance metrics...
@@ -40,62 +40,75 @@ export default function AdminAnalytics() {
 
   return (
     <div className="content-container">
-      {/* Page Header */}
-      <h1 className="page-title">Executive Redressal Telemetry</h1>
-      <p className="page-description">
-        System-wide operational oversight: monitor inter-departmental resolution velocity, identify bottleneck queues, and enforce statutory accountability.
-      </p>
+      {/* Header */}
+      <div className="view-header">
+        <div className="view-header-main">
+          <h1 className="page-title">Operational Analytics</h1>
+          <p className="page-description">
+            System-wide resolution metrics, departmental compliance index, and supervisory audit trail.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="btn btn-secondary btn-sm"
+          onClick={fetchAnalytics}
+          disabled={isLoading}
+        >
+          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
+          <span>Refresh Metrics</span>
+        </button>
+      </div>
 
-      {/* KPI Cards Row */}
+      {/* KPI Row */}
       <div className="metric-row">
         <div className="metric-card">
-          <div className="metric-header">Cumulative Inflow</div>
+          <div className="metric-header">Total Grievances</div>
           <div className="metric-number">{kpis.total_complaints}</div>
-          <div className="metric-sub">Active in queue: <strong>{kpis.active_complaints}</strong></div>
+          <div className="metric-sub">Active in queues: <strong>{kpis.active_complaints}</strong></div>
         </div>
 
-        <div className="metric-card" style={{ borderTop: '2px solid var(--status-green-text)' }}>
-          <div className="metric-header">Statutory Compliance</div>
+        <div className="metric-card" style={{ borderTop: '3px solid var(--status-green-text)' }}>
+          <div className="metric-header" style={{ color: 'var(--status-green-text)' }}>SLA Compliance</div>
           <div className="metric-number" style={{ color: complianceRate >= 80 ? 'var(--status-green-text)' : 'var(--status-amber-text)' }}>
             {complianceRate}%
           </div>
-          <div className="metric-sub">Breach ratio: <strong>{kpis.breach_rate_pct}%</strong></div>
+          <div className="metric-sub">Breach rate: <strong>{kpis.breach_rate_pct}%</strong></div>
         </div>
 
-        <div className="metric-card">
+        <div className="metric-card" style={{ borderTop: '3px solid var(--color-primary)' }}>
           <div className="metric-header">Mean Turnaround (TAT)</div>
           <div className="metric-number" style={{ color: 'var(--color-primary)' }}>
             {kpis.avg_resolution_hours}h
           </div>
-          <div className="metric-sub">Disposed records: <strong>{kpis.resolved + kpis.closed}</strong></div>
+          <div className="metric-sub">Resolved grievances: <strong>{kpis.resolved + kpis.closed}</strong></div>
         </div>
 
-        <div className="metric-card" style={{ borderTop: '2px solid var(--status-red-text)' }}>
+        <div className="metric-card" style={{ borderTop: '3px solid var(--status-red-text)' }}>
           <div className="metric-header" style={{ color: 'var(--status-red-text)' }}>Supervisory Escalations</div>
           <div className="metric-number" style={{ color: 'var(--status-red-text)' }}>{kpis.escalated}</div>
-          <div className="metric-sub">Reassigned to supervisor queue</div>
+          <div className="metric-sub">Currently escalated to supervisors</div>
         </div>
       </div>
 
-      {/* Department Compliance Matrix Table */}
-      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+      {/* Department Compliance Matrix */}
+      <div className="panel" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--space-6)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Building2 size={16} color="var(--color-primary)" />
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
-            Departmental SLA Performance & Turnaround Compliance
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+            Departmental Compliance Breakdown
           </span>
         </div>
 
         <table className="table-dense">
           <thead>
             <tr>
-              <th>Department Jurisdiction</th>
+              <th>Department</th>
               <th>Total Inflow</th>
-              <th>Active Workload</th>
+              <th>Active</th>
               <th>Resolved</th>
               <th>Breached</th>
               <th>Compliance Index</th>
-              <th>Mean TAT</th>
+              <th>Avg Turnaround</th>
             </tr>
           </thead>
           <tbody>
@@ -105,32 +118,33 @@ export default function AdminAnalytics() {
                 <tr key={d.id}>
                   <td>
                     <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>{d.name}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>Code: {d.code}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>{d.code}</div>
                   </td>
                   <td style={{ fontWeight: 600 }}>{d.total}</td>
                   <td><span className="badge badge-gray">{d.active} Active</span></td>
-                  <td><span className="badge badge-green">{d.resolved} Resolved</span></td>
+                  <td><span className="badge badge-green">{d.resolved} Done</span></td>
                   <td>
                     <span className={`badge badge-${d.breached > 0 ? 'red' : 'gray'}`}>
                       {d.breached} Breached
                     </span>
                   </td>
-                  <td style={{ width: '200px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                      <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--color-gray-200)', borderRadius: '3px', overflow: 'hidden' }}>
+                  <td style={{ width: '220px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ flex: 1, height: '7px', backgroundColor: 'var(--color-gray-100)', borderRadius: '4px', overflow: 'hidden' }}>
                         <div
                           style={{
                             width: `${comp}%`,
                             height: '100%',
                             backgroundColor: comp >= 80 ? 'var(--status-green-text)' : comp >= 60 ? 'var(--status-amber-text)' : 'var(--status-red-text)',
+                            borderRadius: '4px',
                           }}
                         />
                       </div>
-                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{comp}%</span>
+                      <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '36px' }}>{comp}%</span>
                     </div>
                   </td>
                   <td>
-                    <strong>{d.avg_resolution_hours} Hours</strong>
+                    <strong>{d.avg_resolution_hours}h</strong>
                   </td>
                 </tr>
               );
@@ -139,29 +153,29 @@ export default function AdminAnalytics() {
         </table>
       </div>
 
-      {/* Supervisory Audit Ledger */}
+      {/* Supervisory Activity Stream */}
       <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <ShieldAlert size={16} color="var(--color-primary)" />
-          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
-            Supervisory Audit Stream (Recent Mutations)
+          <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+            Recent Activity & Audit Stream
           </span>
         </div>
 
-        <div style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+        <div style={{ padding: '14px 20px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {recent_audit_trail.map((log) => (
             <div
               key={log.id}
               style={{
-                padding: 'var(--space-2) var(--space-3)',
+                padding: '10px 14px',
                 backgroundColor: 'var(--color-gray-50)',
-                borderRadius: 'var(--radius)',
-                fontSize: '12px',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: '12.5px',
                 border: '1px solid var(--color-gray-200)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'gray'}`}>
                     {log.from_status ? `${log.from_status} → ` : ''}{log.to_status}
                   </span>
@@ -169,13 +183,13 @@ export default function AdminAnalytics() {
                     Ticket #{log.complaint_id}
                   </span>
                 </div>
-                <span style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>
-                  {new Date(log.created_at).toLocaleString()}
+                <span style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+                  {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                 </span>
               </div>
-              <div style={{ color: 'var(--color-gray-700)', marginTop: '2px' }}>{log.reason}</div>
-              <div style={{ fontSize: '11px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
-                Actor: <strong>{log.changed_by}</strong>
+              <div style={{ color: 'var(--color-gray-700)' }}>{log.reason}</div>
+              <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: '2px' }}>
+                By: <strong>{log.changed_by}</strong>
               </div>
             </div>
           ))}

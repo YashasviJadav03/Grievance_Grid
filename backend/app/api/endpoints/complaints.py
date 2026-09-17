@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List, Optional
 from datetime import datetime, timedelta
 from app.db.session import get_db
@@ -28,9 +29,14 @@ def enrich_sla_meta(complaint: Complaint) -> dict:
     remaining_hours = round(remaining_seconds / 3600.0, 1)
 
     if complaint.status in [ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED]:
+        if complaint.resolved_at:
+            res_remaining_seconds = (complaint.sla_deadline - complaint.resolved_at).total_seconds()
+            res_remaining_hours = round(res_remaining_seconds / 3600.0, 1)
+        else:
+            res_remaining_hours = 0.0
         return {
             "sla_status": "RESOLVED",
-            "sla_hours_remaining": remaining_hours
+            "sla_hours_remaining": res_remaining_hours
         }
 
     if remaining_seconds <= 0 or complaint.is_breached:
@@ -211,10 +217,13 @@ def get_complaint(identifier: str, db: Session = Depends(get_db)):
     Retrieve single complaint by tracking_id (e.g. GG-20260917-4321) or numeric ID.
     Used by public Citizen Tracker and Officer Dashboard detail view.
     """
-    if identifier.isdigit():
-        complaint = db.query(Complaint).filter(Complaint.id == int(identifier)).first()
+    clean_id = identifier.strip()
+    if clean_id.isdigit():
+        complaint = db.query(Complaint).filter(Complaint.id == int(clean_id)).first()
     else:
-        complaint = db.query(Complaint).filter(Complaint.tracking_id == identifier).first()
+        complaint = db.query(Complaint).filter(
+            func.upper(Complaint.tracking_id) == clean_id.upper()
+        ).first()
 
     if not complaint:
         raise HTTPException(status_code=404, detail=f"Grievance '{identifier}' not found")
@@ -252,6 +261,7 @@ def update_complaint_status(
             reason=payload.reason or payload.resolution_notes
         )
     except ValueError as e:
+        db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
 
     meta = enrich_sla_meta(updated)

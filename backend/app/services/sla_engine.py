@@ -16,7 +16,7 @@ def run_sla_scan(db: Session) -> dict:
 
     # Query all active non-terminal complaints
     active_complaints = db.query(Complaint).filter(
-        Complaint.status.in_([ComplaintStatus.ROUTED, ComplaintStatus.IN_PROGRESS])
+        Complaint.status.in_([ComplaintStatus.ROUTED, ComplaintStatus.IN_PROGRESS, ComplaintStatus.REASSIGNED])
     ).all()
 
     total_scanned = len(active_complaints)

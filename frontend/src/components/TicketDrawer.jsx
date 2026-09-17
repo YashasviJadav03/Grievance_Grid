@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { X, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { X, ArrowRight, CheckCircle2, AlertCircle, ShieldAlert } from 'lucide-react';
 import { api } from '../api';
+import { useToast } from './Toast';
 
 export default function TicketDrawer({ ticket, onClose, onUpdated }) {
   if (!ticket) return null;
 
+  const toast = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [showResolveForm, setShowResolveForm] = useState(false);
@@ -20,8 +22,9 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
       });
       onUpdated(updated);
       setShowResolveForm(false);
+      toast.success(`Status updated to ${targetStatus.replace('_', ' ')}`);
     } catch (err) {
-      alert(`Action could not be executed: ${err.message}`);
+      toast.error(`Action could not be executed: ${err.message}`);
     } finally {
       setIsUpdating(false);
     }
@@ -33,14 +36,14 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
         {/* Header */}
         <div className="drawer-head">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-              <span className={`badge badge-${ticket.sla_status === 'GREEN' ? 'green' : ticket.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
-                SLA: {ticket.sla_status}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
+              <span className={`badge badge-${ticket.sla_status === 'GREEN' ? 'green' : ticket.sla_status === 'AMBER' ? 'amber' : ticket.sla_status === 'RESOLVED' ? 'green' : 'red'}`}>
+                {ticket.sla_status}
               </span>
               <span className="badge badge-gray">{ticket.priority}</span>
-              <span className="badge badge-gray">{ticket.status}</span>
+              <span className="badge badge-gray">{ticket.status.replace('_', ' ')}</span>
             </div>
-            <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>
+            <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '15px', color: 'var(--color-gray-900)' }}>
               {ticket.tracking_id}
             </div>
           </div>
@@ -59,22 +62,22 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
         <div className="drawer-main">
           {/* Grievance Summary */}
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: 'var(--space-1)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: '4px' }}>
               Subject
             </div>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: 'var(--space-2)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--color-gray-900)', marginBottom: '8px' }}>
               {ticket.title}
             </h3>
-            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--color-gray-700)', lineHeight: 1.5 }}>
+            <div style={{ padding: '12px 14px', backgroundColor: 'var(--color-gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-gray-200)', fontSize: '13px', color: 'var(--color-gray-700)', lineHeight: 1.5 }}>
               {ticket.description}
             </div>
           </div>
 
           {/* Details Row */}
-          <div className="col-2" style={{ gap: 'var(--space-4)' }}>
-            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)' }}>
+          <div className="col-2" style={{ gap: 'var(--space-3)' }}>
+            <div style={{ padding: '12px', backgroundColor: 'var(--color-gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-gray-200)' }}>
               <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase' }}>
-                Complainant
+                Citizen
               </div>
               <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--color-gray-900)' }}>
                 {ticket.citizen_name}
@@ -83,13 +86,13 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
                 {ticket.citizen_contact}
               </div>
               {ticket.citizen_email && (
-                <div style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>{ticket.citizen_email}</div>
+                <div style={{ fontSize: '11.5px', color: 'var(--color-gray-500)' }}>{ticket.citizen_email}</div>
               )}
             </div>
 
-            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)' }}>
+            <div style={{ padding: '12px', backgroundColor: 'var(--color-gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-gray-200)' }}>
               <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase' }}>
-                Routing Authority
+                Assigned Authority
               </div>
               <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--color-gray-900)' }}>
                 {ticket.department?.name}
@@ -101,24 +104,32 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
           </div>
 
           {/* SLA Time Balance */}
-          <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--radius)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: 'var(--space-1)' }}>
-              <span style={{ color: 'var(--color-gray-500)' }}>Statutory SLA Deadline:</span>
+          <div style={{ padding: '12px 14px', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--radius-sm)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px', marginBottom: '4px' }}>
+              <span style={{ color: 'var(--color-gray-500)' }}>Target SLA Deadline:</span>
               <strong style={{ color: ticket.is_breached ? 'var(--status-red-text)' : 'var(--color-gray-900)' }}>
                 {ticket.sla_deadline ? new Date(ticket.sla_deadline).toLocaleString() : 'N/A'}
               </strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
-              <span style={{ color: 'var(--color-gray-500)' }}>Remaining Balance:</span>
-              <strong style={{ color: ticket.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--color-primary)' }}>
-                {ticket.sla_hours_remaining !== null ? `${ticket.sla_hours_remaining} hrs` : 'N/A'}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12.5px' }}>
+              <span style={{ color: 'var(--color-gray-500)' }}>Time Balance:</span>
+              <strong style={{ color: ticket.sla_hours_remaining !== null && ticket.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--color-primary)' }}>
+                {ticket.status === 'RESOLVED' || ticket.status === 'CLOSED' ? (
+                  ticket.sla_hours_remaining !== null && ticket.sla_hours_remaining >= 0 ? (
+                    <span style={{ color: 'var(--status-green-text)' }}>Resolved ({ticket.sla_hours_remaining}h spare)</span>
+                  ) : (
+                    <span style={{ color: 'var(--status-red-text)' }}>Resolved after breach</span>
+                  )
+                ) : (
+                  ticket.sla_hours_remaining !== null ? `${ticket.sla_hours_remaining} hrs` : 'N/A'
+                )}
               </strong>
             </div>
           </div>
 
           {/* Primary Operations Actions */}
-          <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)', border: '1px solid var(--color-gray-200)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: 'var(--space-3)' }}>
+          <div style={{ padding: '16px', backgroundColor: 'var(--color-gray-50)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-gray-200)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: '12px' }}>
               Operational Actions
             </div>
 
@@ -159,7 +170,7 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
             )}
 
             {showResolveForm && (
-              <div style={{ marginTop: 'var(--space-2)' }}>
+              <div style={{ marginTop: '8px' }}>
                 <label className="form-label">
                   Resolution Notes <span className="req">*</span>
                 </label>
@@ -170,7 +181,7 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
                 />
-                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: '8px' }}>
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
@@ -192,7 +203,7 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
 
             {ticket.status === 'RESOLVED' && (
               <div>
-                <div className="badge badge-green" style={{ marginBottom: 'var(--space-2)' }}>
+                <div className="badge badge-green" style={{ marginBottom: '8px' }}>
                   Grievance Resolved
                 </div>
                 <button
@@ -208,7 +219,7 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
             )}
 
             {ticket.status === 'CLOSED' && (
-              <div style={{ fontSize: '12px', color: 'var(--color-gray-500)' }}>
+              <div style={{ fontSize: '12.5px', color: 'var(--color-gray-500)' }}>
                 This record is formally closed and archived.
               </div>
             )}
@@ -216,32 +227,32 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
 
           {/* Audit Ledger */}
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
-              Audit Ledger ({ticket.status_logs?.length || 0} Events)
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: '8px' }}>
+              Audit History ({ticket.status_logs?.length || 0} Events)
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {ticket.status_logs?.map((log) => (
                 <div
                   key={log.id}
                   style={{
-                    padding: 'var(--space-2) var(--space-3)',
-                    backgroundColor: 'var(--color-gray-100)',
-                    borderRadius: 'var(--radius)',
+                    padding: '8px 12px',
+                    backgroundColor: 'var(--color-gray-50)',
+                    borderRadius: 'var(--radius-sm)',
                     fontSize: '12px',
                     border: '1px solid var(--color-gray-200)',
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                     <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'gray'}`}>
-                      {log.to_status}
+                      {log.to_status.replace('_', ' ')}
                     </span>
-                    <span style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>
-                      {new Date(log.created_at).toLocaleString()}
+                    <span style={{ fontSize: '11px', color: 'var(--color-gray-400)' }}>
+                      {new Date(log.created_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                     </span>
                   </div>
                   <div style={{ color: 'var(--color-gray-700)', marginTop: '2px' }}>{log.reason}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--color-gray-400)', marginTop: '2px' }}>
                     Actor: {log.changed_by}
                   </div>
                 </div>
@@ -253,7 +264,7 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
         {/* Footer */}
         <div className="drawer-foot">
           <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>
-            Close Panel
+            Close
           </button>
         </div>
       </div>

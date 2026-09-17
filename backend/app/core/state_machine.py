@@ -58,6 +58,8 @@ def transition_complaint(
 
     if target_status == ComplaintStatus.RESOLVED:
         complaint.resolved_at = datetime.utcnow()
+    elif current_status == ComplaintStatus.RESOLVED and target_status == ComplaintStatus.IN_PROGRESS:
+        complaint.resolved_at = None
     elif target_status == ComplaintStatus.ESCALATED:
         complaint.is_breached = True
         complaint.breached_at = complaint.breached_at or datetime.utcnow()

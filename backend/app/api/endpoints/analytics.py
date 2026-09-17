@@ -26,7 +26,9 @@ def get_analytics_overview(db: Session = Depends(get_db)):
     resolved_count = db.query(Complaint).filter(Complaint.status == ComplaintStatus.RESOLVED).count()
     closed_count = db.query(Complaint).filter(Complaint.status == ComplaintStatus.CLOSED).count()
 
-    active_count = routed_count + in_progress_count + escalated_count
+    active_count = db.query(Complaint).filter(
+        ~Complaint.status.in_([ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED])
+    ).count()
     total_breached = db.query(Complaint).filter(Complaint.is_breached == True).count()
     breach_rate_pct = round((total_breached / total_complaints * 100), 1) if total_complaints > 0 else 0.0
 
@@ -48,7 +50,7 @@ def get_analytics_overview(db: Session = Depends(get_db)):
         d_total = db.query(Complaint).filter(Complaint.department_id == d.id).count()
         d_active = db.query(Complaint).filter(
             Complaint.department_id == d.id,
-            Complaint.status.in_([ComplaintStatus.ROUTED, ComplaintStatus.IN_PROGRESS, ComplaintStatus.ESCALATED])
+            ~Complaint.status.in_([ComplaintStatus.RESOLVED, ComplaintStatus.CLOSED])
         ).count()
         d_breached = db.query(Complaint).filter(
             Complaint.department_id == d.id,
