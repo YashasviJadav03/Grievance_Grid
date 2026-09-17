@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: grievance_grid_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PROJECT_NAME=Grievance Grid
+      - API_V1_STR=/api/v1
+      - DATABASE_URL=sqlite:///./grievance_grid.db
+      - DEBUG=False
+    volumes:
+      - grievance_data:/app
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: grievance_grid_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  grievance_data:
