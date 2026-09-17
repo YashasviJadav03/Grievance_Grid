@@ -1,5 +1,5 @@
-# Grievance Grid (गंभीर ग्रिड)
-### Automated Public Grievance Routing & SLA-Tracking Engine
+# Grievance Grid
+### Automated Public Grievance Routing & SLA Accountability Engine
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115.6-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![React](https://img.shields.io/badge/React-18.3.1-61DAFB.svg?logo=react&logoColor=black)](https://reactjs.org)
@@ -8,44 +8,48 @@
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.6.0-F7931E.svg?logo=scikitlearn&logoColor=white)](https://scikit-learn.org)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-> **Problem**: In legacy citizen grievance systems (e.g. CPGRAMS-style portals), public complaints frequently disappear into inter-departmental "black holes" without ownership, time bounds, or SLA accountability.
->
-> **Solution**: **Grievance Grid** provides an autonomous ingestion and accountability engine: intake API $\to$ real-time intent classification $\to$ automated department queue routing $\to$ category SLA timer $\to$ autonomous background escalation $\to$ immutable audit trails and executive analytics.
+---
+
+## Executive Summary
+
+Citizen grievance redressal mechanisms (such as CPGRAMS-style public portals) frequently experience procedural friction due to inter-departmental misrouting, absence of explicit service-level agreement (SLA) deadlines, and lack of automated escalation pathways. In many instances, public grievances enter an indeterminate administrative backlog without identifiable departmental ownership or auditability.
+
+**Grievance Grid** addresses this systemic vulnerability through an autonomous routing and SLA-enforcement engine. The platform couples an automated intake pipeline with a two-tier natural language classifier, applies deterministic SLA policies to each grievance category, executes continuous background monitoring for deadline compliance, and mandates an immutable audit trail for all lifecycle state transitions.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph Citizens["Citizen Layer"]
+    subgraph Citizens["Citizen Intake Layer"]
         C1["Public Web Portal"] --> INTAKE["Intake API (/complaints)"]
         C2["Tracking Search"] --> TRACK["Tracker API (/complaints/:id)"]
     end
 
-    subgraph IntakeEngine["Intelligent Routing Pipeline"]
+    subgraph IntakeEngine["Routing & Classification Pipeline"]
         INTAKE --> CLF{"Two-Tier Classifier"}
-        CLF -->|"High Confidence"| RULE["Rule-Based Matcher"]
-        CLF -->|"Conversational / Typos"| TFIDF["TF-IDF + Naive Bayes"]
-        RULE --> STAMP["Route & Stamp SLA Deadline"]
+        CLF -->|"High Confidence"| RULE["Rule-Based Pattern Matcher"]
+        CLF -->|"Conversational Fallback"| TFIDF["TF-IDF Vectorizer + Multinomial Naive Bayes"]
+        RULE --> STAMP["Route Queue & Stamp SLA Deadline"]
         TFIDF --> STAMP
     end
 
-    subgraph CoreEngine["SLA State Machine & Storage"]
-        STAMP --> DB[("PostgreSQL / SQLite")]
-        DB --> AUDIT[("StatusLog (Immutable Audit Trail)")]
+    subgraph CoreEngine["Data Persistence & Audit Log"]
+        STAMP --> DB[("Relational Database")]
+        DB --> AUDIT[("StatusLog (Append-Only Audit Trail)")]
     end
 
-    subgraph BackgroundWorker["Autonomous Escalation Daemon"]
-        CRON["Background Sweeper (Every 30s)"] --> SCAN["Scan Open Tickets"]
-        SCAN -->|"Elapsed >= 75%"| AMBER["Flag: At Risk (Amber)"]
-        SCAN -->|"Now >= Deadline"| ESCALATE["Auto-Escalate to Supervisor Queue + Priority: CRITICAL"]
+    subgraph BackgroundWorker["Autonomous Escalation Service"]
+        CRON["Background Scanner (Periodic)"] --> SCAN["Evaluate Active Tickets"]
+        SCAN -->|"Elapsed >= 75%"| AMBER["Flag: At Risk"]
+        SCAN -->|"Current Time >= Deadline"| ESCALATE["Auto-Escalate to Supervisor Queue (Priority: CRITICAL)"]
         ESCALATE --> AUDIT
     end
 
-    subgraph Operations["Governance Layer"]
+    subgraph Governance["Administrative & Operational Layer"]
         DB --> DASH["Officer Queue Dashboard (SLA Triage)"]
-        DB --> ANALYTICS["Admin Analytics (Turnaround, Breach %)"]
+        DB --> ANALYTICS["Admin Analytics (Turnaround, Breach Ratio)"]
         DASH --> ACTION["Status Progression & Resolution Notes"]
         ACTION --> AUDIT
     end
@@ -53,126 +57,86 @@ flowchart TD
 
 ---
 
-## 🔄 SLA State Machine
+## Finite State Machine & SLA Policy
 
-Every complaint follows an explicit, audited finite state machine:
+All grievances are processed through a strictly validated finite state machine. Direct state transitions are governed by programmatic guardrails, and every state mutation appends an immutable record to the audit log.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> SUBMITTED: Citizen Intake
-    SUBMITTED --> CLASSIFIED: AI Intent Extraction
-    CLASSIFIED --> ROUTED: Queue Assignment + SLA Stamped
-    ROUTED --> IN_PROGRESS: Officer Acknowledges
-    IN_PROGRESS --> RESOLVED: Resolution Recorded
-    RESOLVED --> CLOSED: Citizen Satisfied / Archived
+    [*] --> SUBMITTED: Intake Submission
+    SUBMITTED --> CLASSIFIED: Automated Intent Classification
+    CLASSIFIED --> ROUTED: Queue Assignment & SLA Deadline Stamped
+    ROUTED --> IN_PROGRESS: Operational Acknowledgment
+    IN_PROGRESS --> RESOLVED: Documented Resolution Recorded
+    RESOLVED --> CLOSED: Formal Closure / Archival
     
     ROUTED --> ESCALATED: SLA Deadline Breached
     IN_PROGRESS --> ESCALATED: SLA Deadline Breached
-    ESCALATED --> REASSIGNED: Supervisor Reassigns
-    REASSIGNED --> IN_PROGRESS: Priority Escalated (CRITICAL)
+    ESCALATED --> REASSIGNED: Supervisor Queue Reassignment
+    REASSIGNED --> IN_PROGRESS: Work Resumed (Priority: CRITICAL)
 ```
 
-### SLA Health Tiers:
-- 🟢 **Green (On Schedule)**: Elapsed time $< 75\%$ of SLA duration.
-- 🟡 **Amber (At Risk)**: Elapsed time $\ge 75\%$ and $< 100\%$ of SLA duration.
-- 🔴 **Red (Breached)**: Elapsed time $\ge 100\%$ $\to$ Triggers state transition to `ESCALATED`, reassigns to `SUPERVISOR_QUEUE_<DEPT>`, bumps priority to `CRITICAL`, and appends an immutable entry in `StatusLog`.
+### SLA Compliance Tiers
+
+1. **On Schedule (Green)**: Elapsed time is less than 75% of the total allotted SLA duration.
+2. **At Risk (Amber)**: Elapsed time equals or exceeds 75% but has not yet reached 100% of the SLA window.
+3. **Breached (Red)**: Current time has reached or exceeded the calculated SLA deadline. The engine automatically transitions the ticket status to `ESCALATED`, sets `is_breached = True`, elevates priority to `CRITICAL`, reassigns the ticket to `SUPERVISOR_QUEUE_<DEPT>`, and registers an audit log entry authored by `SYSTEM_SLA_ENGINE`.
 
 ---
 
-## 🧠 Two-Tier Classification Pipeline
+## Classification and Routing Pipeline
 
-| Tier | Engine | Latency | Accuracy Role |
+The intake system employs a two-tier hybrid architecture to ensure high-throughput deterministic routing while preserving resilience against non-standard terminology and conversational phrasing.
+
+| Pipeline Tier | Underlying Technology | Operational Latency | Functional Scope |
 | :--- | :--- | :--- | :--- |
-| **Tier 1: Rule Engine** | Regex & High-Precision Keywords | $< 2\text{ ms}$ | Catches exact domain markers (e.g., `"pipe burst"`, `"live wire"`, `"pothole"`, `"garbage dump"`). |
-| **Tier 2: Machine Learning** | Scikit-Learn TF-IDF + Multinomial Naive Bayes | $\approx 5\text{ ms}$ | Fallback trained on civic complaint corpora to classify conversational complaints with typos or regional vernacular. |
+| **Tier 1: Pattern Matcher** | Compiled Regular Expressions & Token Dictionaries | < 2 ms | Matches explicit civic terminology (e.g., pipeline rupture, live electrical conductor, road crater, overflowing dumpster). |
+| **Tier 2: Statistical Classifier** | Scikit-Learn TF-IDF + Multinomial Naive Bayes | ~5 ms | Evaluates conversational input, morphological variations, and typos when Tier 1 confidence falls below operational thresholds. |
 
 ---
 
-## 📦 Data Model & Entities
+## Data Model and Schema
 
 | Entity | Description |
 | :--- | :--- |
-| **`Department`** | Civic administrative container (`WATER`, `ROADS`, `ELECTRICITY`, `SANITATION`) with supervisor escalation emails. |
-| **`Category`** | Grievance sub-category with default SLA hours, priority (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), and trigger keywords. |
-| **`SLARule`** | Category SLA configuration with warning thresholds ($75\%$) and breach hour parameters. |
-| **`Complaint`** | Central ticket with unique tracking code (`GG-YYYYMMDD-XXXX`), status, priority, SLA deadline, and resolution notes. |
-| **`StatusLog`** | Immutable append-only audit trail logging every lifecycle event, actor (`CITIZEN`, `SYSTEM_SLA_ENGINE`, `OFFICER`), and reason. |
-| **`User`** | RBAC model for Citizens, Department Lead Officers, Supervisors, and Central Administrators. |
+| **`Department`** | Represents functional municipal divisions (`WATER`, `ROADS`, `ELECTRICITY`, `SANITATION`) and stores corresponding escalation points of contact. |
+| **`Category`** | Granular problem classification defining standard turnaround hours, default priority, and pattern triggers. |
+| **`SLARule`** | Policy container establishing warning thresholds (75%) and breach enforcement criteria per category. |
+| **`Complaint`** | Operational grievance record containing a unique tracking identifier (`GG-YYYYMMDD-XXXX`), status, SLA deadline timestamp, breach state, and resolution notes. |
+| **`StatusLog`** | Append-only audit trail capturing transition history, actor identity (`CITIZEN`, `SYSTEM_SLA_ENGINE`, `OFFICER`), timestamp, and justification. |
+| **`User`** | Role-based access control entity representing Citizens, Department Officers, Supervisors, and Central System Administrators. |
 
 ---
 
-## ⚡ Live Features
+## Core System Capabilities
 
-1. **Citizen Portal (`/`)**:
-   - **Real-Time Classification Preview**: As citizens type, the system instantly forecasts the target department, suggested category, and guaranteed SLA turnaround before submission.
-   - **Public Status Tracker**: 1-click lookup with visual multi-step progress stepper and countdown clock.
-2. **Officer Operations Dashboard**:
-   - Triage queue color-coded by SLA urgency (🔴 Breached, 🟡 At Risk, 🟢 On Schedule).
-   - Slide-over ticket drawer with complete context, state progression controls, and mandatory resolution notes.
-3. **Admin Analytics & Executive KPIs**:
-   - Breach rate percentage, active workload, department compliance progress bars, and average resolution time in hours.
-   - Live governance audit stream showing real-time system actions.
-4. **Interactive SLA Simulator**:
-   - An integrated testing sandbox allowing evaluators to backdate any ticket's timestamps by $12\text{h}$, $24\text{h}$, or $48\text{h}$ and trigger the escalation worker to watch tickets flip to `ESCALATED` in real time.
+### 1. Citizen Portal and Real-Time Routing Forecast
+- **Predictive Intake**: As a citizen drafts a grievance, the system issues asynchronous classification queries to forecast the receiving department, specific category, and guaranteed SLA window prior to formal submission.
+- **Public Grievance Tracker**: Enables direct progress inspection via tracking identifier without mandatory authentication. Renders an interactive lifecycle stepper, remaining SLA countdown, and official audit log.
 
----
+### 2. Officer Operations Dashboard
+- **SLA-Triaged Queue**: Displays departmental workloads categorized by SLA risk (Breached, At Risk, On Schedule).
+- **Interactive Action Drawer**: Provides full incident context and enforces verified state machine transitions (`ROUTED` -> `IN_PROGRESS` -> `RESOLVED`), requiring structured resolution notes prior to ticket closure.
 
-## 🚀 Quickstart Guide
+### 3. Administrative Telemetry and Analytics
+- **System KPIs**: Aggregates total intake, active volume, overall breach ratios, and mean resolution turnaround times.
+- **Departmental Compliance**: Compares cross-departmental volume distribution and compliance percentages to identify operational bottlenecks.
+- **Audit Feed**: Streams real-time transition logs to ensure supervisory transparency.
 
-### Option 1: Run Locally (Fastest)
-
-#### 1. Backend (FastAPI + Python 3.10+)
-```bash
-cd backend
-python -m venv venv
-# Windows:
-.\venv\Scripts\activate
-# Linux/macOS:
-source venv/bin/activate
-
-pip install -r requirements.txt
-uvicorn app.main:app --reload --port 8000
-```
-*API Swagger Docs available at: `http://localhost:8000/api/v1/docs`*
-
-#### 2. Frontend (React 18 + Vite)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-*Web App available at: `http://localhost:5173/`*
+### 4. SLA Time Simulation Sandbox
+- Enables administrative review and demonstration of automated escalation by applying configurable negative time offsets to ticket timestamps and triggering the evaluation daemon on demand.
 
 ---
 
-### Option 2: Run via Docker Compose
-```bash
-docker-compose up --build
-```
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000`
+## Automated Verification Suite
 
----
+The repository includes test suites verifying core system requirements:
 
-## 🧪 Automated Milestone Verification
+- **Milestone Verification Suite (`backend/test_milestones.py`)**:
+  - Validates relational database initialization, departmental seeding, and category configurations.
+  - Verifies deterministic routing accuracy (e.g., confirmation that drinking water complaints route strictly to the Water Supply authority with an assigned 12-hour SLA).
+  - Confirms state machine compliance across complete submission and resolution lifecycles.
 
-Run the automated test suites:
-```bash
-# Verify Phase 0, 1 & 2 (CRUD, Seeding, Auto-Routing Milestone)
-python backend/test_milestones.py
-
-# Verify Phase 3 (Backdating & Auto-Escalation State Flip)
-python backend/test_sla_escalation.py
-```
-
----
-
-## 🎙️ 60-Second Verbal Pitch (For Interviews)
-
-> *"In legacy citizen grievance platforms like CPGRAMS, citizen complaints frequently enter administrative black holes. A pothole complaint sits unread in an inbox, gets bounced between departments, and has zero accountability.*
->
-> *I built **Grievance Grid** to solve this through automated routing and SLA state machines. On intake, a two-tiered NLP classifier auto-assigns the ticket to the correct department queue and stamps a strict SLA deadline based on urgency—for example, 4 hours for a live electrical wire, 12 hours for drinking water, or 48 hours for road repairs.*
->
-> *An asynchronous background daemon continuously evaluates open tickets. If a deadline breaches, it triggers an autonomous state flip to **ESCALATED**, reassigns the ticket to the department supervisor's queue with **CRITICAL** priority, and appends an immutable record to the audit trail.*
->
-> *Citizens get a transparent tracking timeline, officers get an SLA-triaged queue, and municipal admins get real-time bottleneck analytics. To take this to **Bharat scale**, the next step is integrating multi-lingual speech-to-text via Bhashini and WhatsApp intake."*
+- **SLA Escalation Suite (`backend/test_sla_escalation.py`)**:
+  - Programmatically backdates grievance timestamps past assigned SLA thresholds.
+  - Executes the escalation daemon and verifies automatic status updates to `ESCALATED`, priority reassignment to `CRITICAL`, and entry generation within `StatusLog`.
