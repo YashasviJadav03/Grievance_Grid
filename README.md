@@ -6,7 +6,11 @@
 [![Vite](https://img.shields.io/badge/Vite-8.3.0-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0.36-D71F00.svg)](https://www.sqlalchemy.org)
 [![Scikit-Learn](https://img.shields.io/badge/Scikit--Learn-1.6.0-F7931E.svg?logo=scikitlearn&logoColor=white)](https://scikit-learn.org)
+[![Deploy to Render](https://img.shields.io/badge/Render-Live%20Demo-46E3B7?logo=render&logoColor=white)](https://grievance-grid-frontend.onrender.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+> 🚀 **Live Demo**: **[https://grievance-grid-frontend.onrender.com/](https://grievance-grid-frontend.onrender.com/)**  
+> *Access the live civic grievance portal: submit complaints, test real-time intent routing, inspect live SLA tracking, and evaluate departmental analytics.*
 
 ---
 
