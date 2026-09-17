@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
-import { BarChart2, TrendingUp, AlertCircle, CheckCircle, Clock, ShieldAlert, Building2, Activity, RefreshCw } from 'lucide-react';
+import { BarChart2, Building2, Clock, ShieldAlert, Layers, RefreshCw } from 'lucide-react';
 
 export default function AdminAnalytics() {
   const [data, setData] = useState(null);
@@ -24,174 +24,158 @@ export default function AdminAnalytics() {
 
   if (isLoading || !data) {
     return (
-      <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
-        <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px' }} />
-        <p>Aggregating departmental telemetry and SLA compliance statistics...</p>
+      <div className="content-container">
+        <div className="panel" style={{ textAlign: 'center', padding: 'var(--space-12)' }}>
+          <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto var(--space-2)' }} />
+          <p style={{ color: 'var(--color-gray-500)', fontSize: '13px' }}>
+            Aggregating departmental telemetry and SLA compliance metrics...
+          </p>
+        </div>
       </div>
     );
   }
 
   const { kpis, department_performance, recent_audit_trail } = data;
-  const overallComplianceRate = Math.max(0, 100 - kpis.breach_rate_pct);
+  const complianceRate = Math.max(0, 100 - kpis.breach_rate_pct);
 
   return (
-    <div>
+    <div className="content-container">
       {/* Page Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Executive Redressal Telemetry & SLA Compliance</h1>
-          <p className="page-subtitle">
-            System-wide operational oversight: monitor inter-departmental resolution velocity, identify bottleneck queues, and enforce accountability.
-          </p>
+      <h1 className="page-title">Executive Redressal Telemetry</h1>
+      <p className="page-description">
+        System-wide operational oversight: monitor inter-departmental resolution velocity, identify bottleneck queues, and enforce statutory accountability.
+      </p>
+
+      {/* KPI Cards Row */}
+      <div className="metric-row">
+        <div className="metric-card">
+          <div className="metric-header">Cumulative Inflow</div>
+          <div className="metric-number">{kpis.total_complaints}</div>
+          <div className="metric-sub">Active in queue: <strong>{kpis.active_complaints}</strong></div>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={fetchAnalytics}
-          disabled={isLoading}
-        >
-          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-          Refresh Telemetry
-        </button>
-      </div>
-
-      {/* KPI Cards */}
-      <div className="grid-4" style={{ marginBottom: '24px' }}>
-        <div className="kpi-card">
-          <div className="kpi-label">Cumulative Intake</div>
-          <div className="kpi-value">{kpis.total_complaints}</div>
-          <div className="kpi-footnote">
-            Active in Queue: <strong>{kpis.active_complaints}</strong> records
+        <div className="metric-card" style={{ borderTop: '2px solid var(--status-green-text)' }}>
+          <div className="metric-header">Statutory Compliance</div>
+          <div className="metric-number" style={{ color: complianceRate >= 80 ? 'var(--status-green-text)' : 'var(--status-amber-text)' }}>
+            {complianceRate}%
           </div>
+          <div className="metric-sub">Breach ratio: <strong>{kpis.breach_rate_pct}%</strong></div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-green-text)' }}>
-          <div className="kpi-label">Statutory Compliance Ratio</div>
-          <div className="kpi-value" style={{ color: overallComplianceRate >= 80 ? 'var(--status-green-text)' : 'var(--status-amber-text)' }}>
-            {overallComplianceRate}%
-          </div>
-          <div className="kpi-footnote">
-            Breach Rate: <strong>{kpis.breach_rate_pct}%</strong> ({kpis.total_breached} total breaches)
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-label">Mean Turnaround Time (TAT)</div>
-          <div className="kpi-value" style={{ color: 'var(--primary-700)' }}>
+        <div className="metric-card">
+          <div className="metric-header">Mean Turnaround (TAT)</div>
+          <div className="metric-number" style={{ color: 'var(--color-primary)' }}>
             {kpis.avg_resolution_hours}h
           </div>
-          <div className="kpi-footnote">
-            Disposed tickets: <strong>{kpis.resolved + kpis.closed}</strong>
-          </div>
+          <div className="metric-sub">Disposed records: <strong>{kpis.resolved + kpis.closed}</strong></div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-red-text)' }}>
-          <div className="kpi-label" style={{ color: 'var(--status-red-text)' }}>Active Supervisory Escalations</div>
-          <div className="kpi-value" style={{ color: 'var(--status-red-text)' }}>
-            {kpis.escalated}
-          </div>
-          <div className="kpi-footnote">
-            Reassigned to supervisor queue
-          </div>
+        <div className="metric-card" style={{ borderTop: '2px solid var(--status-red-text)' }}>
+          <div className="metric-header" style={{ color: 'var(--status-red-text)' }}>Supervisory Escalations</div>
+          <div className="metric-number" style={{ color: 'var(--status-red-text)' }}>{kpis.escalated}</div>
+          <div className="metric-sub">Reassigned to supervisor queue</div>
         </div>
       </div>
 
-      {/* Department SLA Compliance Matrix */}
-      <div className="card" style={{ marginBottom: '24px' }}>
-        <div className="card-header">
-          <span className="card-title">
-            <Building2 size={16} color="var(--primary-600)" />
-            Departmental SLA Compliance & Resolution Performance Matrix
+      {/* Department Compliance Matrix Table */}
+      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <Building2 size={16} color="var(--color-primary)" />
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+            Departmental SLA Performance & Turnaround Compliance
           </span>
         </div>
 
-        <div className="table-container" style={{ border: 'none', boxShadow: 'none' }}>
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Department Jurisdiction</th>
-                <th>Total Intake</th>
-                <th>Active Workload</th>
-                <th>Resolved</th>
-                <th>Breached SLA</th>
-                <th>Compliance Index</th>
-                <th>Mean TAT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {department_performance.map((d) => {
-                const compliance = Math.max(0, 100 - d.breach_rate_pct);
-                return (
-                  <tr key={d.id}>
-                    <td>
-                      <strong style={{ color: 'var(--text-primary)' }}>{d.name}</strong>
-                      <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>Code: {d.code}</div>
-                    </td>
-                    <td><strong>{d.total}</strong></td>
-                    <td><span className="badge badge-blue">{d.active} Active</span></td>
-                    <td><span className="badge badge-green">{d.resolved} Resolved</span></td>
-                    <td>
-                      <span className={`badge badge-${d.breached > 0 ? 'red' : 'gray'}`}>
-                        {d.breached} Breached
-                      </span>
-                    </td>
-                    <td style={{ width: '220px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <div style={{ flex: 1, height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
-                          <div
-                            style={{
-                              width: `${compliance}%`,
-                              height: '100%',
-                              backgroundColor: compliance >= 80 ? 'var(--status-green-text)' : compliance >= 60 ? 'var(--status-amber-text)' : 'var(--status-red-text)',
-                            }}
-                          />
-                        </div>
-                        <span style={{ fontSize: '0.775rem', fontWeight: 700 }}>{compliance}%</span>
+        <table className="table-dense">
+          <thead>
+            <tr>
+              <th>Department Jurisdiction</th>
+              <th>Total Inflow</th>
+              <th>Active Workload</th>
+              <th>Resolved</th>
+              <th>Breached</th>
+              <th>Compliance Index</th>
+              <th>Mean TAT</th>
+            </tr>
+          </thead>
+          <tbody>
+            {department_performance.map((d) => {
+              const comp = Math.max(0, 100 - d.breach_rate_pct);
+              return (
+                <tr key={d.id}>
+                  <td>
+                    <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>{d.name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>Code: {d.code}</div>
+                  </td>
+                  <td style={{ fontWeight: 600 }}>{d.total}</td>
+                  <td><span className="badge badge-gray">{d.active} Active</span></td>
+                  <td><span className="badge badge-green">{d.resolved} Resolved</span></td>
+                  <td>
+                    <span className={`badge badge-${d.breached > 0 ? 'red' : 'gray'}`}>
+                      {d.breached} Breached
+                    </span>
+                  </td>
+                  <td style={{ width: '200px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                      <div style={{ flex: 1, height: '6px', backgroundColor: 'var(--color-gray-200)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${comp}%`,
+                            height: '100%',
+                            backgroundColor: comp >= 80 ? 'var(--status-green-text)' : comp >= 60 ? 'var(--status-amber-text)' : 'var(--status-red-text)',
+                          }}
+                        />
                       </div>
-                    </td>
-                    <td>
-                      <strong>{d.avg_resolution_hours} Hours</strong>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      <span style={{ fontSize: '12px', fontWeight: 600 }}>{comp}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    <strong>{d.avg_resolution_hours} Hours</strong>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
 
       {/* Supervisory Audit Ledger */}
-      <div className="card">
-        <div className="card-header">
-          <span className="card-title">
-            <Activity size={16} color="var(--primary-600)" />
-            System Supervisory Audit Ledger (Recent Lifecycle Mutations)
+      <div className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: 'var(--space-4) var(--space-6)', borderBottom: '1px solid var(--color-gray-200)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+          <ShieldAlert size={16} color="var(--color-primary)" />
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+            Supervisory Audit Stream (Recent Mutations)
           </span>
         </div>
 
-        <div className="timeline">
+        <div style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
           {recent_audit_trail.map((log) => (
-            <div key={log.id} className="timeline-item">
-              <div className={`timeline-bullet ${log.to_status === 'ESCALATED' ? 'breached' : log.to_status === 'RESOLVED' ? 'completed' : 'current'}`}>
-                {log.to_status === 'ESCALATED' ? '!' : '✓'}
-              </div>
-              <div className="timeline-box">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'blue'}`}>
-                      {log.from_status ? `${log.from_status} ➔ ` : ''}{log.to_status}
-                    </span>
-                    <strong style={{ fontSize: '0.8rem', color: 'var(--text-primary)' }}>Ticket #{log.complaint_id}</strong>
-                  </div>
-                  <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                    {new Date(log.created_at).toLocaleString()}
+            <div
+              key={log.id}
+              style={{
+                padding: 'var(--space-2) var(--space-3)',
+                backgroundColor: 'var(--color-gray-50)',
+                borderRadius: 'var(--radius)',
+                fontSize: '12px',
+                border: '1px solid var(--color-gray-200)',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'gray'}`}>
+                    {log.from_status ? `${log.from_status} → ` : ''}{log.to_status}
+                  </span>
+                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-gray-900)' }}>
+                    Ticket #{log.complaint_id}
                   </span>
                 </div>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{log.reason}</p>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                  Action Registered By: <strong>{log.changed_by}</strong>
+                <span style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>
+                  {new Date(log.created_at).toLocaleString()}
                 </span>
+              </div>
+              <div style={{ color: 'var(--color-gray-700)', marginTop: '2px' }}>{log.reason}</div>
+              <div style={{ fontSize: '11px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
+                Actor: <strong>{log.changed_by}</strong>
               </div>
             </div>
           ))}

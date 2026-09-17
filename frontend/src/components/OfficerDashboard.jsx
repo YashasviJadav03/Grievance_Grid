@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../api';
 import TicketDrawer from './TicketDrawer';
-import { Filter, Search, RefreshCw, AlertCircle, Clock, CheckCircle, ShieldAlert, ArrowUpRight } from 'lucide-react';
+import { Search, Filter, RefreshCw, ArrowRight, Inbox } from 'lucide-react';
 
 export default function OfficerDashboard() {
   const [complaints, setComplaints] = useState([]);
@@ -55,60 +55,46 @@ export default function OfficerDashboard() {
   };
 
   return (
-    <div>
+    <div className="content-container">
       {/* Page Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">Officer Operations & SLA Triage Queue</h1>
-          <p className="page-subtitle">
-            Departmental grievance triage sorted by statutory deadline urgency. Review workload, execute transitions, and record formal redressals.
-          </p>
+      <h1 className="page-title">Department Queue & SLA Triage</h1>
+      <p className="page-description">
+        Active complaints prioritized by statutory deadline compliance. Select any entry to review field notes, escalate, or document formal disposal.
+      </p>
+
+      {/* KPI Triage Metrics */}
+      <div className="metric-row">
+        <div className="metric-card">
+          <div className="metric-header">Active Caseload</div>
+          <div className="metric-number">{complaints.length - resolvedCount}</div>
+          <div className="metric-sub">Complaints across all queues</div>
         </div>
 
-        <button
-          type="button"
-          className="btn btn-secondary btn-sm"
-          onClick={fetchComplaints}
-          disabled={isLoading}
-        >
-          <RefreshCw size={13} className={isLoading ? 'animate-spin' : ''} />
-          Refresh Registry
-        </button>
-      </div>
-
-      {/* KPI Triage Statistics */}
-      <div className="grid-4" style={{ marginBottom: '24px' }}>
-        <div className="kpi-card">
-          <div className="kpi-label">Active Queue Caseload</div>
-          <div className="kpi-value">{complaints.length - resolvedCount}</div>
-          <div className="kpi-footnote">Total assigned across departments</div>
+        <div className="metric-card" style={{ borderTop: '2px solid var(--status-red-text)' }}>
+          <div className="metric-header" style={{ color: 'var(--status-red-text)' }}>Breached / Escalated</div>
+          <div className="metric-number" style={{ color: 'var(--status-red-text)' }}>{redCount}</div>
+          <div className="metric-sub">Reassigned to supervisor queue</div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-red-text)' }}>
-          <div className="kpi-label" style={{ color: 'var(--status-red-text)' }}>Breached / Escalated</div>
-          <div className="kpi-value" style={{ color: 'var(--status-red-text)' }}>{redCount}</div>
-          <div className="kpi-footnote">Requires urgent supervisory intervention</div>
+        <div className="metric-card" style={{ borderTop: '2px solid var(--status-amber-text)' }}>
+          <div className="metric-header" style={{ color: 'var(--status-amber-text)' }}>At-Risk (&gt;75% SLA)</div>
+          <div className="metric-number" style={{ color: 'var(--status-amber-text)' }}>{amberCount}</div>
+          <div className="metric-sub">Approaching breach threshold</div>
         </div>
 
-        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-amber-text)' }}>
-          <div className="kpi-label" style={{ color: 'var(--status-amber-text)' }}>At Risk (&gt;75% SLA)</div>
-          <div className="kpi-value" style={{ color: 'var(--status-amber-text)' }}>{amberCount}</div>
-          <div className="kpi-footnote">Turnaround approaching breach threshold</div>
-        </div>
-
-        <div className="kpi-card" style={{ borderLeft: '4px solid var(--status-green-text)' }}>
-          <div className="kpi-label" style={{ color: 'var(--status-green-text)' }}>Compliant Disposals</div>
-          <div className="kpi-value" style={{ color: 'var(--status-green-text)' }}>{resolvedCount}</div>
-          <div className="kpi-footnote">Resolved within statutory deadlines</div>
+        <div className="metric-card" style={{ borderTop: '2px solid var(--status-green-text)' }}>
+          <div className="metric-header" style={{ color: 'var(--status-green-text)' }}>Compliant Disposals</div>
+          <div className="metric-number" style={{ color: 'var(--status-green-text)' }}>{resolvedCount}</div>
+          <div className="metric-sub">Resolved within deadline</div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="card" style={{ padding: '16px', marginBottom: '20px' }}>
-        <div className="grid-2">
+      {/* Filter Toolbar */}
+      <div className="panel" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+        <div className="col-2" style={{ gap: 'var(--space-4)' }}>
           {/* Department Select */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Filter size={15} color="var(--text-muted)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Filter size={15} color="var(--color-gray-400)" />
             <select
               className="form-select"
               value={selectedDept}
@@ -124,26 +110,26 @@ export default function OfficerDashboard() {
           </div>
 
           {/* Search Input */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Search size={15} color="var(--text-muted)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+            <Search size={15} color="var(--color-gray-400)" />
             <input
               type="text"
               className="form-input"
-              placeholder="Filter by tracking number, complainant, or keyword..."
+              placeholder="Search by tracking code, complainant, or keyword..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
 
-        {/* Segmented Triage Filter Buttons */}
-        <div style={{ display: 'flex', gap: '8px', marginTop: '14px', flexWrap: 'wrap', borderTop: '1px solid var(--border-light)', paddingTop: '12px' }}>
+        {/* Status Filters */}
+        <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-gray-200)', flexWrap: 'wrap' }}>
           <button
             type="button"
             className={`btn ${slaFilter === 'ALL' ? 'btn-primary' : 'btn-secondary'} btn-sm`}
             onClick={() => setSlaFilter('ALL')}
           >
-            All Tickets ({complaints.length})
+            All Records ({complaints.length})
           </button>
           <button
             type="button"
@@ -151,7 +137,7 @@ export default function OfficerDashboard() {
             style={{ backgroundColor: slaFilter === 'RED' ? 'var(--status-red-text)' : undefined, color: slaFilter !== 'RED' && redCount > 0 ? 'var(--status-red-text)' : undefined }}
             onClick={() => setSlaFilter('RED')}
           >
-            Breached / Escalated ({redCount})
+            Breached ({redCount})
           </button>
           <button
             type="button"
@@ -179,9 +165,9 @@ export default function OfficerDashboard() {
         </div>
       </div>
 
-      {/* Data Table */}
-      <div className="table-container">
-        <table className="data-table">
+      {/* High Density Table */}
+      <div className="table-wrapper">
+        <table className="table-dense">
           <thead>
             <tr>
               <th>Tracking ID</th>
@@ -190,14 +176,17 @@ export default function OfficerDashboard() {
               <th>Priority</th>
               <th>Status</th>
               <th>SLA Balance</th>
-              <th>Operation</th>
+              <th style={{ textAlign: 'right' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredComplaints.length === 0 ? (
               <tr>
-                <td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                  No grievances found matching the specified parameters.
+                <td colSpan={7}>
+                  <div className="empty-placeholder">
+                    <Inbox size={28} style={{ margin: '0 auto', opacity: 0.4 }} />
+                    <p>No complaints match the current filter criteria.</p>
+                  </div>
                 </td>
               </tr>
             ) : (
@@ -207,29 +196,24 @@ export default function OfficerDashboard() {
                   style={{ cursor: 'pointer' }}
                   onClick={() => setActiveTicket(c)}
                 >
-                  <td>
-                    <span style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary-700)', fontSize: '0.85rem' }}>
-                      {c.tracking_id}
-                    </span>
-                    <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {new Date(c.created_at).toLocaleDateString()}
-                    </div>
+                  <td style={{ fontFamily: 'monospace', fontWeight: 600, color: 'var(--color-primary)' }}>
+                    {c.tracking_id}
                   </td>
 
-                  <td style={{ maxWidth: '320px' }}>
-                    <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>
+                  <td style={{ maxWidth: '340px' }}>
+                    <div style={{ fontWeight: 600, color: 'var(--color-gray-900)' }}>
                       {c.title}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
                       {c.citizen_name} • {c.citizen_contact}
                     </div>
                   </td>
 
                   <td>
-                    <div style={{ fontSize: '0.825rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    <div style={{ fontWeight: 500, color: 'var(--color-gray-900)' }}>
                       {c.department?.name || 'Unassigned'}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>
                       {c.category?.name || 'General'}
                     </div>
                   </td>
@@ -241,23 +225,23 @@ export default function OfficerDashboard() {
                   </td>
 
                   <td>
-                    <span className={`badge badge-${c.status === 'ESCALATED' ? 'red' : c.status === 'RESOLVED' ? 'green' : c.status === 'IN_PROGRESS' ? 'amber' : 'blue'}`}>
+                    <span className={`badge badge-${c.status === 'ESCALATED' ? 'red' : c.status === 'RESOLVED' ? 'green' : c.status === 'IN_PROGRESS' ? 'amber' : 'gray'}`}>
                       {c.status}
                     </span>
                   </td>
 
                   <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                       <span className={`badge badge-${c.sla_status === 'GREEN' ? 'green' : c.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
                         {c.sla_status}
                       </span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: c.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--text-primary)' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 600, color: c.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--color-gray-700)' }}>
                         {c.sla_hours_remaining !== null ? `${c.sla_hours_remaining}h` : '—'}
                       </span>
                     </div>
                   </td>
 
-                  <td>
+                  <td style={{ textAlign: 'right' }}>
                     <button
                       type="button"
                       className="btn btn-secondary btn-sm"
@@ -266,8 +250,8 @@ export default function OfficerDashboard() {
                         setActiveTicket(c);
                       }}
                     >
-                      Inspect
-                      <ArrowUpRight size={13} />
+                      <span>Review</span>
+                      <ArrowRight size={13} />
                     </button>
                   </td>
                 </tr>

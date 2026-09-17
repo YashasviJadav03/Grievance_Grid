@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Clock, CheckCircle, AlertTriangle, ShieldAlert, ArrowRight, UserCheck, Phone, Mail, Building2 } from 'lucide-react';
+import { X, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import { api } from '../api';
 
 export default function TicketDrawer({ ticket, onClose, onUpdated }) {
@@ -7,22 +7,21 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [showResolveModal, setShowResolveModal] = useState(false);
-  const [officerDesignation, setOfficerDesignation] = useState('DESK_OFFICER_IN_CHARGE');
+  const [showResolveForm, setShowResolveForm] = useState(false);
 
   const handleTransition = async (targetStatus, reason = null) => {
     setIsUpdating(true);
     try {
       const updated = await api.updateComplaintStatus(ticket.id, {
         target_status: targetStatus,
-        actor: officerDesignation,
-        reason: reason || `State advanced to ${targetStatus} by ${officerDesignation}.`,
+        actor: 'OFFICER_IN_CHARGE',
+        reason: reason || `Transitioned to ${targetStatus}`,
         resolution_notes: targetStatus === 'RESOLVED' ? resolutionNotes : undefined,
       });
       onUpdated(updated);
-      setShowResolveModal(false);
+      setShowResolveForm(false);
     } catch (err) {
-      alert(`Status transition could not be executed: ${err.message}`);
+      alert(`Action could not be executed: ${err.message}`);
     } finally {
       setIsUpdating(false);
     }
@@ -30,91 +29,97 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
 
   return (
     <div className="drawer-backdrop" onClick={onClose}>
-      <div className="drawer-panel" onClick={(e) => e.stopPropagation()}>
-        {/* Drawer Header */}
-        <div className="drawer-top">
+      <div className="drawer-pane" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="drawer-head">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
               <span className={`badge badge-${ticket.sla_status === 'GREEN' ? 'green' : ticket.sla_status === 'AMBER' ? 'amber' : 'red'}`}>
                 SLA: {ticket.sla_status}
               </span>
               <span className="badge badge-gray">{ticket.priority}</span>
-              <span className="badge badge-blue">{ticket.status}</span>
+              <span className="badge badge-gray">{ticket.status}</span>
             </div>
-            <h2 style={{ fontSize: '1.15rem', fontFamily: 'monospace', letterSpacing: '0.02em' }}>
+            <div style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '14px', color: 'var(--color-gray-900)' }}>
               {ticket.tracking_id}
-            </h2>
+            </div>
           </div>
+
           <button
             type="button"
-            className="btn btn-secondary btn-sm"
+            className="btn btn-ghost btn-sm"
             onClick={onClose}
-            style={{ padding: '6px 8px' }}
+            style={{ padding: '6px' }}
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Drawer Body */}
-        <div className="drawer-content">
-          {/* Incident Summary */}
+        {/* Content */}
+        <div className="drawer-main">
+          {/* Grievance Summary */}
           <div>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px' }}>
-              Grievance Subject
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: 'var(--space-1)' }}>
+              Subject
             </div>
-            <h3 style={{ fontSize: '1.05rem', marginBottom: '8px', color: 'var(--text-primary)' }}>
+            <h3 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: 'var(--space-2)' }}>
               {ticket.title}
             </h3>
-            <div style={{ padding: '14px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)', fontSize: '0.85rem', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)', fontSize: '13px', color: 'var(--color-gray-700)', lineHeight: 1.5 }}>
               {ticket.description}
             </div>
           </div>
 
-          {/* Department & Complainant Cards */}
-          <div className="grid-2">
-            <div style={{ padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>
-                Complainant Record
+          {/* Details Row */}
+          <div className="col-2" style={{ gap: 'var(--space-4)' }}>
+            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase' }}>
+                Complainant
               </div>
-              <strong style={{ fontSize: '0.9rem', color: 'var(--text-primary)' }}>{ticket.citizen_name}</strong>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>{ticket.citizen_contact}</div>
+              <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--color-gray-900)' }}>
+                {ticket.citizen_name}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
+                {ticket.citizen_contact}
+              </div>
               {ticket.citizen_email && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{ticket.citizen_email}</div>
+                <div style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>{ticket.citizen_email}</div>
               )}
             </div>
 
-            <div style={{ padding: '12px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-light)' }}>
-              <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginBottom: '4px' }}>
-                Department Routing
+            <div style={{ padding: 'var(--space-3)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase' }}>
+                Routing Authority
               </div>
-              <strong style={{ fontSize: '0.9rem', color: 'var(--primary-700)' }}>{ticket.department?.name}</strong>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+              <div style={{ fontWeight: 600, marginTop: '2px', color: 'var(--color-gray-900)' }}>
+                {ticket.department?.name}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
                 {ticket.category?.name}
               </div>
             </div>
           </div>
 
-          {/* SLA Timecard */}
-          <div style={{ padding: '14px 16px', background: '#FFFFFF', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.825rem', marginBottom: '6px' }}>
-              <span style={{ color: 'var(--text-muted)' }}>SLA Deadline:</span>
-              <strong style={{ color: ticket.is_breached ? 'var(--status-red-text)' : 'var(--status-green-text)' }}>
+          {/* SLA Time Balance */}
+          <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-gray-200)', borderRadius: 'var(--radius)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: 'var(--space-1)' }}>
+              <span style={{ color: 'var(--color-gray-500)' }}>Statutory SLA Deadline:</span>
+              <strong style={{ color: ticket.is_breached ? 'var(--status-red-text)' : 'var(--color-gray-900)' }}>
                 {ticket.sla_deadline ? new Date(ticket.sla_deadline).toLocaleString() : 'N/A'}
               </strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-              <span style={{ color: 'var(--text-muted)' }}>Hours Remaining:</span>
-              <strong style={{ color: ticket.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--primary-700)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px' }}>
+              <span style={{ color: 'var(--color-gray-500)' }}>Remaining Balance:</span>
+              <strong style={{ color: ticket.sla_hours_remaining < 0 ? 'var(--status-red-text)' : 'var(--color-primary)' }}>
                 {ticket.sla_hours_remaining !== null ? `${ticket.sla_hours_remaining} hrs` : 'N/A'}
               </strong>
             </div>
           </div>
 
-          {/* Officer Action Workflow Controls */}
-          <div style={{ padding: '16px', background: 'var(--bg-card-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-medium)' }}>
-            <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <UserCheck size={16} color="var(--primary-600)" />
-              Operational State Machine Controls
+          {/* Primary Operations Actions */}
+          <div style={{ padding: 'var(--space-4)', backgroundColor: 'var(--color-gray-100)', borderRadius: 'var(--radius)', border: '1px solid var(--color-gray-200)' }}>
+            <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-gray-900)', marginBottom: 'var(--space-3)' }}>
+              Operational Actions
             </div>
 
             {ticket.status === 'ROUTED' && (
@@ -123,29 +128,27 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
                 className="btn btn-primary"
                 style={{ width: '100%' }}
                 disabled={isUpdating}
-                onClick={() => handleTransition('IN_PROGRESS', 'Desk Officer formally acknowledged grievance and assigned dispatch crew.')}
+                onClick={() => handleTransition('IN_PROGRESS', 'Officer acknowledged grievance and initiated field investigation.')}
               >
                 Acknowledge & Initiate Work (Set IN PROGRESS)
               </button>
             )}
 
-            {(ticket.status === 'IN_PROGRESS' || ticket.status === 'ESCALATED' || ticket.status === 'REASSIGNED') && !showResolveModal && (
-              <div style={{ display: 'flex', gap: '10px' }}>
+            {(ticket.status === 'IN_PROGRESS' || ticket.status === 'ESCALATED' || ticket.status === 'REASSIGNED') && !showResolveForm && (
+              <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 <button
                   type="button"
                   className="btn btn-primary"
-                  style={{ flex: 1, backgroundColor: 'var(--status-green-text)' }}
+                  style={{ flex: 1 }}
                   disabled={isUpdating}
-                  onClick={() => setShowResolveModal(true)}
+                  onClick={() => setShowResolveForm(true)}
                 >
-                  <CheckCircle size={15} />
-                  Record Official Resolution
+                  Document Formal Resolution
                 </button>
                 {ticket.status !== 'ESCALATED' && (
                   <button
                     type="button"
-                    className="btn btn-secondary btn-sm"
-                    style={{ borderColor: 'var(--status-red-border)', color: 'var(--status-red-text)' }}
+                    className="btn btn-secondary"
                     disabled={isUpdating}
                     onClick={() => handleTransition('ESCALATED', 'Manual supervisory escalation triggered by handling officer.')}
                   >
@@ -155,32 +158,31 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
               </div>
             )}
 
-            {showResolveModal && (
-              <div style={{ marginTop: '10px' }}>
+            {showResolveForm && (
+              <div style={{ marginTop: 'var(--space-2)' }}>
                 <label className="form-label">
-                  Official Redressal Summary <span className="required">*</span>
+                  Resolution Notes <span className="req">*</span>
                 </label>
                 <textarea
                   rows={3}
                   className="form-textarea"
-                  placeholder="Document corrective actions completed on ground (e.g., pipeline repaired, inspection verified)..."
+                  placeholder="Document corrective actions completed on ground..."
                   value={resolutionNotes}
                   onChange={(e) => setResolutionNotes(e.target.value)}
                 />
-                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
                   <button
                     type="button"
-                    className="btn btn-primary"
-                    style={{ backgroundColor: 'var(--status-green-text)' }}
+                    className="btn btn-primary btn-sm"
                     disabled={isUpdating || !resolutionNotes.trim()}
                     onClick={() => handleTransition('RESOLVED', resolutionNotes)}
                   >
-                    Confirm Disposal & Mark RESOLVED
+                    Confirm Resolution
                   </button>
                   <button
                     type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowResolveModal(false)}
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => setShowResolveForm(false)}
                   >
                     Cancel
                   </button>
@@ -189,53 +191,58 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
             )}
 
             {ticket.status === 'RESOLVED' && (
-              <div style={{ textAlign: 'center' }}>
-                <span className="badge badge-green" style={{ marginBottom: '8px' }}>
-                  GRIEVANCE DISPOSED & RESOLVED
-                </span>
+              <div>
+                <div className="badge badge-green" style={{ marginBottom: 'var(--space-2)' }}>
+                  Grievance Resolved
+                </div>
                 <button
                   type="button"
                   className="btn btn-secondary btn-sm"
-                  style={{ width: '100%', marginTop: '8px' }}
+                  style={{ width: '100%' }}
                   disabled={isUpdating}
-                  onClick={() => handleTransition('CLOSED', 'Complainant satisfaction confirmed. Record archived.')}
+                  onClick={() => handleTransition('CLOSED', 'Complainant satisfaction verified. Case formally archived.')}
                 >
-                  Formally Archive / Close
+                  Formally Archive / Close Record
                 </button>
               </div>
             )}
 
             {ticket.status === 'CLOSED' && (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                This record has been archived. No further operational transitions permitted.
+              <div style={{ fontSize: '12px', color: 'var(--color-gray-500)' }}>
+                This record is formally closed and archived.
               </div>
             )}
           </div>
 
-          {/* Chronological Audit Ledger */}
+          {/* Audit Ledger */}
           <div>
-            <div style={{ fontSize: '0.775rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '10px' }}>
-              Immutable Audit Ledger ({ticket.status_logs?.length || 0} Entries)
+            <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--color-gray-500)', textTransform: 'uppercase', marginBottom: 'var(--space-2)' }}>
+              Audit Ledger ({ticket.status_logs?.length || 0} Events)
             </div>
-            <div className="timeline">
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
               {ticket.status_logs?.map((log) => (
-                <div key={log.id} className="timeline-item">
-                  <div className={`timeline-bullet ${log.to_status === 'ESCALATED' ? 'breached' : log.to_status === 'RESOLVED' ? 'completed' : 'current'}`}>
-                    {log.to_status === 'ESCALATED' ? '!' : '✓'}
-                  </div>
-                  <div className="timeline-box">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                      <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'blue'}`}>
-                        {log.to_status}
-                      </span>
-                      <span style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                        {new Date(log.created_at).toLocaleString()}
-                      </span>
-                    </div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{log.reason}</p>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginTop: '4px' }}>
-                      Actor: <strong>{log.changed_by}</strong>
+                <div
+                  key={log.id}
+                  style={{
+                    padding: 'var(--space-2) var(--space-3)',
+                    backgroundColor: 'var(--color-gray-100)',
+                    borderRadius: 'var(--radius)',
+                    fontSize: '12px',
+                    border: '1px solid var(--color-gray-200)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <span className={`badge badge-${log.to_status === 'ESCALATED' ? 'red' : log.to_status === 'RESOLVED' ? 'green' : 'gray'}`}>
+                      {log.to_status}
                     </span>
+                    <span style={{ fontSize: '11px', color: 'var(--color-gray-500)' }}>
+                      {new Date(log.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  <div style={{ color: 'var(--color-gray-700)', marginTop: '2px' }}>{log.reason}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-gray-500)', marginTop: '2px' }}>
+                    Actor: {log.changed_by}
                   </div>
                 </div>
               ))}
@@ -243,9 +250,9 @@ export default function TicketDrawer({ ticket, onClose, onUpdated }) {
           </div>
         </div>
 
-        {/* Drawer Footer */}
-        <div className="drawer-bottom">
-          <button type="button" className="btn btn-secondary" onClick={onClose}>
+        {/* Footer */}
+        <div className="drawer-foot">
+          <button type="button" className="btn btn-secondary btn-sm" onClick={onClose}>
             Close Panel
           </button>
         </div>

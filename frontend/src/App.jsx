@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import Navbar from './components/Navbar';
-import CitizenPortal from './components/CitizenPortal';
+import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
 import OfficerDashboard from './components/OfficerDashboard';
+import CitizenIntake from './components/CitizenIntake';
+import CitizenTracker from './components/CitizenTracker';
 import AdminAnalytics from './components/AdminAnalytics';
-import SLASimulator from './components/SLASimulator';
+import SLADiagnostics from './components/SLADiagnostics';
 import { api } from './api';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('citizen');
+  const [activeTab, setActiveTab] = useState('officer');
   const [trackedId, setTrackedId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
 
@@ -15,48 +17,57 @@ export default function App() {
     setIsScanning(true);
     try {
       const res = await api.triggerSLAScan();
-      alert(`SLA Sweep completed. Scanned: ${res.result.scanned_count}, Escalated: ${res.result.escalated_count}`);
+      alert(`SLA Scan Complete: ${res.result.scanned_count} complaints evaluated, ${res.result.escalated_count} escalated.`);
     } catch (err) {
-      alert(`SLA Sweep failed: ${err.message}`);
+      alert(`SLA Scan Error: ${err.message}`);
     } finally {
       setIsScanning(false);
     }
   };
 
   return (
-    <div className="app-container">
-      <Navbar
+    <div className="app-layout">
+      {/* Professional Sidebar Navigation */}
+      <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onTriggerScan={handleTriggerScan}
-        isScanning={isScanning}
       />
 
-      <main className="main-content">
-        {activeTab === 'citizen' && (
-          <CitizenPortal
-            initialTrackingId={trackedId}
-            onOpenTracker={(id) => {
-              setTrackedId(id);
-              setActiveTab('citizen');
-            }}
-          />
-        )}
+      {/* Main Content Area */}
+      <div className="app-main">
+        <TopBar
+          activeTab={activeTab}
+          onTriggerScan={handleTriggerScan}
+          isScanning={isScanning}
+        />
 
-        {activeTab === 'officer' && <OfficerDashboard />}
+        <main>
+          {activeTab === 'officer' && <OfficerDashboard />}
 
-        {activeTab === 'analytics' && <AdminAnalytics />}
+          {activeTab === 'citizen_intake' && (
+            <CitizenIntake
+              onNavigateToTracker={(id) => {
+                setTrackedId(id);
+                setActiveTab('citizen_track');
+              }}
+            />
+          )}
 
-        {activeTab === 'simulator' && (
-          <SLASimulator
-            onNavigateToOfficer={() => setActiveTab('officer')}
-          />
-        )}
-      </main>
+          {activeTab === 'citizen_track' && (
+            <CitizenTracker
+              initialTrackingId={trackedId}
+            />
+          )}
 
-      <footer style={{ borderTop: '1px solid var(--border-light)', backgroundColor: '#FFFFFF', padding: '20px 24px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-        Grievance Grid — Autonomous Public Grievance Routing & SLA Accountability Platform. Enterprise GovTech Architecture.
-      </footer>
+          {activeTab === 'analytics' && <AdminAnalytics />}
+
+          {activeTab === 'simulator' && (
+            <SLADiagnostics
+              onNavigateToOfficer={() => setActiveTab('officer')}
+            />
+          )}
+        </main>
+      </div>
     </div>
   );
 }
